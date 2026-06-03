@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Financial Summary</title>
+</head>
+<body>
+    <h1>Financial Summary</h1>
+
+    <section>
+        <h2>Total Income</h2>
+        <p>{{ total_income|floatformat:2 }}</p>
+    </section>
+
+    <section>
+        <h2>Total Expenses</h2>
+        <p>{{ total_expenses|floatformat:2 }}</p>
+    </section>
+
+    <section>
+        <h2>Net Financial Status</h2>
+        <p>{{ net_financial_status|floatformat:2 }}</p>
+    </section>
+
+    <section>
+        <h2>Account Balances</h2>
+        {% if account_balances %}
+            <ul>
+                {% for item in account_balances %}
+                    <li>{{ item.account.name }}: {{ item.balance|floatformat:2 }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>0.00</p>
+        {% endif %}
+    </section>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<h1>Accounts</h1>
+
+{% if accounts %}
+  <ul>
+    {% for account in accounts %}
+      <li>{{ account.name }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No accounts found.</p>
+{% endif %}

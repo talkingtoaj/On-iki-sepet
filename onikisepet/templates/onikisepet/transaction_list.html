@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Transactions</title>
+</head>
+<body>
+    <h1>Transactions</h1>
+
+    {% if transactions %}
+        <ul>
+            {% for transaction in transactions %}
+                <li>
+                    {{ transaction.date }} -
+                    {{ transaction.get_transaction_type_display }} -
+                    {{ transaction.amount }} {{ transaction.currency }} -
+                    {{ transaction.description|default:"No description" }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No transactions found.</p>
+    {% endif %}
+</body>
+</html>
