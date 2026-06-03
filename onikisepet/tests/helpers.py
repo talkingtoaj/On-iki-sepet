@@ -326,8 +326,8 @@ class TransactionTestMixin:
     @classmethod
     def get_financial_calculations_module(cls):
         try:
-            return import_module("onikisepet.services.financial_calculations")
+            return import_module("onikisepet.usecases.financial_calculations")
         except ModuleNotFoundError as exc:
             raise AssertionError(
-                "Create onikisepet.services.financial_calculations for transaction totals and balances."
+                "Create onikisepet.usecases.financial_calculations for transaction totals and balances."
             ) from exc

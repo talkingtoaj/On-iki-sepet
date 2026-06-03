@@ -5,8 +5,8 @@ from django.shortcuts import redirect, render
 
 from .forms import AccountForm, CashExpenseForm, CategoryForm, TransactionForm
 from .models import Account, Category, Receipt, Transaction
-from .services import financial_calculations
-
+from .usecases import financial_calculations
+from .usecases import cash_ops
 
 def _can_manage_categories(user):
     return user.is_superuser
@@ -124,16 +124,7 @@ def cash_expense_create(request):
     if request.method == "POST":
         form = CashExpenseForm(request.POST, request.FILES)
         if form.is_valid():
-            with db_transaction.atomic():
-                transaction_data = form.get_transaction_data()
-                transaction_data["created_by"] = request.user
-                created_transaction = Transaction.objects.create(**transaction_data)
-                Receipt.objects.create(
-                    transaction=created_transaction,
-                    file=form.get_receipt_file(),
-                    original_filename=form.get_original_filename(),
-                    uploaded_by=request.user,
-                )
+            cash_ops.create_cash_transaction(form, request.user)
             return redirect("transaction_list")
     else:
         form = CashExpenseForm()
