@@ -147,6 +147,11 @@ class Transaction(models.Model):
         elif self.transaction_type == self.TransactionType.TRANSFER:
             self._validate_transfer(errors)
 
+        if not errors:
+            from onikisepet.account_rules import validate_account_purpose_for_transaction
+
+            validate_account_purpose_for_transaction(self, errors)
+
         if errors:
             raise ValidationError(errors)
 
@@ -254,3 +259,27 @@ class Receipt(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
+
+
+class AuditLog(models.Model):
+    class Action(models.TextChoices):
+        CREATE = "create", "Create"
+        UPDATE = "update", "Update"
+
+    content_type = models.CharField(max_length=50)
+    object_id = models.PositiveIntegerField()
+    action = models.CharField(max_length=10, choices=Action.choices)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="audit_logs",
+    )
+    changed_at = models.DateTimeField(auto_now_add=True)
+    before = models.JSONField(default=dict, blank=True)
+    after = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-changed_at"]
+
+    def __str__(self):
+        return f"{self.action} {self.content_type}#{self.object_id}"

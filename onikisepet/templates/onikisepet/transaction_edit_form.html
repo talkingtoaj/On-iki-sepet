@@ -1,15 +1,17 @@
 {% extends "onikisepet/base.html" %}
 
-{% block title %}İşlem Oluştur | On İki Sepet{% endblock %}
+{% block title %}İşlem Düzenle | On İki Sepet{% endblock %}
 
 {% block content %}
     <section class="content-panel">
-        <h1>İşlem Oluştur</h1>
+        <h1>İşlem Düzenle</h1>
+        <p>İşlem tipi: {{ transaction.get_transaction_type_display }} (değiştirilemez)</p>
 
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
             <button class="button" type="submit">Kaydet</button>
+            <a class="secondary-link" href="{% url 'transaction_list' %}">İptal</a>
         </form>
     </section>
 {% endblock %}

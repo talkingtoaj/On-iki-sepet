@@ -96,6 +96,285 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
             "main_expense_account": main_expense_account,
         }
 
+    def _create_currency_summary_scenario(self):
+        try_account = self.create_account(
+            name="TRY Summary Account",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+        )
+        usd_account = self.create_account(
+            name="USD Summary Account",
+            account_type="bank",
+            account_purpose="foreign_currency",
+            currency="USD",
+        )
+        eur_account = self.create_account(
+            name="EUR Summary Account",
+            account_type="bank",
+            account_purpose="foreign_currency",
+            currency="EUR",
+        )
+
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("500.00"),
+            target_account=try_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            transaction_type="expense",
+            amount=Decimal("200.00"),
+            source_account=try_account,
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("100.00"),
+            target_account=usd_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            transaction_type="expense",
+            amount=Decimal("25.00"),
+            source_account=usd_account,
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("50.00"),
+            target_account=eur_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            transaction_type="expense",
+            amount=Decimal("5.00"),
+            source_account=eur_account,
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+
+    def _create_date_range_scenario(self):
+        try_account = self.create_account(
+            name="TRY Date Range Account",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+        )
+        usd_account = self.create_account(
+            name="USD Date Range Account",
+            account_type="bank",
+            account_purpose="foreign_currency",
+            currency="USD",
+        )
+        try_transfer_target = self.create_account(
+            name="TRY Date Range Transfer Target",
+            account_type="bank",
+            account_purpose="main_expense",
+            currency="TRY",
+        )
+
+        self.create_transaction(
+            date="2026-06-01",
+            transaction_type="income",
+            amount=Decimal("100.00"),
+            target_account=try_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-10",
+            transaction_type="income",
+            amount=Decimal("200.00"),
+            target_account=try_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-20",
+            transaction_type="expense",
+            amount=Decimal("50.00"),
+            source_account=try_account,
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-25",
+            transaction_type="transfer",
+            amount=Decimal("80.00"),
+            source_account=try_account,
+            target_account=try_transfer_target,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-15",
+            transaction_type="income",
+            amount=Decimal("40.00"),
+            target_account=usd_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-07-01",
+            transaction_type="income",
+            amount=Decimal("300.00"),
+            target_account=try_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+
+    def _create_category_report_scenario(self):
+        special_support_category = self.create_category(
+            name="Special Support",
+            category_type="income",
+        )
+        bills_category = self.create_category(
+            name="Bills",
+            category_type="expense",
+        )
+
+        try_cash_account = self.create_account(
+            name="TRY Category Cash Account",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+        )
+        try_online_donation_account = self.create_account(
+            name="TRY Category Online Donation Account",
+            account_type="bank",
+            account_purpose="online_donation",
+            currency="TRY",
+        )
+        try_bank_account = self.create_account(
+            name="TRY Category Bank Account",
+            account_type="bank",
+            account_purpose="main_expense",
+            currency="TRY",
+        )
+        usd_bank_account = self.create_account(
+            name="USD Category Bank Account",
+            account_type="bank",
+            account_purpose="foreign_currency",
+            currency="USD",
+        )
+        try_transfer_target = self.create_account(
+            name="TRY Category Transfer Target",
+            account_type="bank",
+            account_purpose="main_expense",
+            currency="TRY",
+        )
+
+        self.create_transaction(
+            date="2026-06-01",
+            transaction_type="income",
+            amount=Decimal("500.00"),
+            target_account=try_cash_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-10",
+            transaction_type="income",
+            amount=Decimal("200.00"),
+            target_account=try_online_donation_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-12",
+            transaction_type="income",
+            amount=Decimal("100.00"),
+            target_account=usd_bank_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-15",
+            transaction_type="income",
+            amount=Decimal("300.00"),
+            target_account=try_cash_account,
+            category=special_support_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-18",
+            transaction_type="expense",
+            amount=Decimal("250.00"),
+            source_account=try_cash_account,
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-20",
+            transaction_type="expense",
+            amount=Decimal("75.00"),
+            source_account=try_bank_account,
+            category=bills_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-22",
+            transaction_type="expense",
+            amount=Decimal("40.00"),
+            source_account=usd_bank_account,
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-25",
+            transaction_type="transfer",
+            amount=Decimal("999.00"),
+            source_account=try_cash_account,
+            target_account=try_transfer_target,
+            created_by=self.admin_user,
+        )
+
+    def _create_category_date_range_scenario(self):
+        try_cash_account = self.create_account(
+            name="TRY Category Date Account",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+        )
+
+        self.create_transaction(
+            date="2026-06-01",
+            transaction_type="income",
+            amount=Decimal("500.00"),
+            target_account=try_cash_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-10",
+            transaction_type="income",
+            amount=Decimal("200.00"),
+            target_account=try_cash_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-06-20",
+            transaction_type="expense",
+            amount=Decimal("75.00"),
+            source_account=try_cash_account,
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            date="2026-07-01",
+            transaction_type="income",
+            amount=Decimal("300.00"),
+            target_account=try_cash_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+
     def _login_viewer(self):
         self.client.login(username=self.viewer_user.username, password=self.password)
 
@@ -137,7 +416,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Total Income")
+        self.assertContains(response, "Toplam Gelir")
         self.assertContains(response, "500.00")
 
     def test_report_dashboard_displays_total_expenses(self):
@@ -146,7 +425,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Total Expenses")
+        self.assertContains(response, "Toplam Gider")
         self.assertContains(response, "200.00")
 
     def test_report_dashboard_displays_net_financial_status(self):
@@ -155,7 +434,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Net Financial Status")
+        self.assertContains(response, "Net Durum")
         self.assertContains(response, "300.00")
 
     def test_report_dashboard_displays_account_balances(self):
@@ -164,7 +443,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Account Balances")
+        self.assertContains(response, "Hesap Bakiyeleri")
         self.assertContains(response, "800.00")
         self.assertContains(response, "400.00")
         self.assertContains(response, "100.00")
@@ -184,9 +463,9 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Total Income")
-        self.assertContains(response, "Total Expenses")
-        self.assertContains(response, "Net Financial Status")
+        self.assertContains(response, "Toplam Gelir")
+        self.assertContains(response, "Toplam Gider")
+        self.assertContains(response, "Net Durum")
         self.assertContains(response, "0.00")
 
     def test_income_transaction_appears_in_total_income(self):
@@ -195,7 +474,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Total Income")
+        self.assertContains(response, "Toplam Gelir")
         self.assertContains(response, "500.00")
 
     def test_expense_transaction_appears_in_total_expenses(self):
@@ -204,7 +483,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Total Expenses")
+        self.assertContains(response, "Toplam Gider")
         self.assertContains(response, "200.00")
 
     def test_transfer_transaction_is_not_included_in_total_income(self):
@@ -213,7 +492,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Total Income")
+        self.assertContains(response, "Toplam Gelir")
         self.assertContains(response, "500.00")
         self.assertNotContains(response, "600.00")
 
@@ -227,7 +506,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Total Expenses")
+        self.assertContains(response, "Toplam Gider")
         self.assertContains(response, "200.00")
         self.assertNotContains(response, "325.00")
 
@@ -237,7 +516,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Net Financial Status")
+        self.assertContains(response, "Net Durum")
         self.assertContains(response, "300.00")
 
     def test_account_balance_starts_from_opening_balance(self):
@@ -261,3 +540,346 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
         self.assertContains(response, "400.00")
         self.assertContains(response, "Main Expense Account")
         self.assertContains(response, "100.00")
+
+    def test_report_dashboard_displays_try_summary_section(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "TRY Özeti")
+
+    def test_report_dashboard_displays_usd_summary_section(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "USD Özeti")
+
+    def test_report_dashboard_displays_eur_summary_section(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "EUR Özeti")
+
+    def test_report_dashboard_displays_try_income_expense_and_net(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Toplam Gelir: 500.00 TRY")
+        self.assertContains(response, "Toplam Gider: 200.00 TRY")
+        self.assertContains(response, "Net Durum: 300.00 TRY")
+
+    def test_report_dashboard_displays_usd_income_expense_and_net(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Toplam Gelir: 100.00 USD")
+        self.assertContains(response, "Toplam Gider: 25.00 USD")
+        self.assertContains(response, "Net Durum: 75.00 USD")
+
+    def test_report_dashboard_displays_eur_income_expense_and_net(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Toplam Gelir: 50.00 EUR")
+        self.assertContains(response, "Toplam Gider: 5.00 EUR")
+        self.assertContains(response, "Net Durum: 45.00 EUR")
+
+    def test_report_dashboard_does_not_display_combined_income_total_across_currencies(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertNotContains(response, "650.00")
+
+    def test_report_dashboard_does_not_display_combined_expense_total_across_currencies(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertNotContains(response, "230.00")
+
+    def test_report_dashboard_does_not_display_combined_net_total_across_currencies(self):
+        self._create_currency_summary_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertNotContains(response, "420.00")
+
+    def test_report_dashboard_displays_zero_currency_summaries_when_no_transactions(self):
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "TRY Özeti")
+        self.assertContains(response, "Toplam Gelir: 0.00 TRY")
+        self.assertContains(response, "Toplam Gider: 0.00 TRY")
+        self.assertContains(response, "Net Durum: 0.00 TRY")
+        self.assertContains(response, "USD Özeti")
+        self.assertContains(response, "Toplam Gelir: 0.00 USD")
+        self.assertContains(response, "Toplam Gider: 0.00 USD")
+        self.assertContains(response, "Net Durum: 0.00 USD")
+        self.assertContains(response, "EUR Özeti")
+        self.assertContains(response, "Toplam Gelir: 0.00 EUR")
+        self.assertContains(response, "Toplam Gider: 0.00 EUR")
+        self.assertContains(response, "Net Durum: 0.00 EUR")
+
+    def test_report_dashboard_without_date_filter_shows_all_transactions(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Toplam Gelir: 600.00 TRY")
+        self.assertContains(response, "Toplam Gider: 50.00 TRY")
+        self.assertContains(response, "Net Durum: 550.00 TRY")
+
+    def test_report_dashboard_with_start_date_only_excludes_older_transactions(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "2026-06-15"},
+        )
+
+        self.assertContains(response, "Toplam Gelir: 300.00 TRY")
+        self.assertContains(response, "Toplam Gider: 50.00 TRY")
+        self.assertContains(response, "Net Durum: 250.00 TRY")
+        self.assertNotContains(response, "600.00 TRY")
+
+    def test_report_dashboard_with_end_date_only_excludes_later_transactions(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"end_date": "2026-06-30"},
+        )
+
+        self.assertContains(response, "Toplam Gelir: 300.00 TRY")
+        self.assertContains(response, "Toplam Gider: 50.00 TRY")
+        self.assertContains(response, "Net Durum: 250.00 TRY")
+        self.assertNotContains(response, "600.00 TRY")
+
+    def test_report_dashboard_with_date_range_shows_only_transactions_inside_range(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "2026-06-01", "end_date": "2026-06-30"},
+        )
+
+        self.assertContains(response, "Toplam Gelir: 300.00 TRY")
+        self.assertContains(response, "Toplam Gider: 50.00 TRY")
+        self.assertContains(response, "Net Durum: 250.00 TRY")
+        self.assertNotContains(response, "600.00 TRY")
+
+    def test_currency_summary_respects_date_range(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "2026-06-01", "end_date": "2026-06-30"},
+        )
+
+        self.assertContains(response, "Toplam Gelir: 300.00 TRY")
+        self.assertContains(response, "Toplam Gider: 50.00 TRY")
+        self.assertContains(response, "Net Durum: 250.00 TRY")
+        self.assertContains(response, "Toplam Gelir: 40.00 USD")
+        self.assertContains(response, "Toplam Gider: 0.00 USD")
+        self.assertContains(response, "Net Durum: 40.00 USD")
+
+    def test_date_filtered_report_still_does_not_count_transfers_as_income_or_expense(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "2026-06-15", "end_date": "2026-06-30"},
+        )
+
+        self.assertContains(response, "Toplam Gelir: 0.00 TRY")
+        self.assertContains(response, "Toplam Gider: 50.00 TRY")
+        self.assertContains(response, "Net Durum: -50.00 TRY")
+        self.assertNotContains(response, "Toplam Gelir: 80.00 TRY")
+        self.assertNotContains(response, "Toplam Gider: 130.00 TRY")
+
+    def test_report_dashboard_with_invalid_start_date_does_not_crash(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "not-a-date"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_report_dashboard_with_invalid_end_date_does_not_crash(self):
+        self._create_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"end_date": "not-a-date"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_report_dashboard_displays_income_by_category_section(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Kategoriye Göre Gelir")
+
+    def test_report_dashboard_displays_income_category_totals(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Donation: 700.00 TRY")
+        self.assertContains(response, "Special Support: 300.00 TRY")
+
+    def test_report_dashboard_income_category_totals_show_currency(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Donation: 700.00 TRY")
+        self.assertContains(response, "Donation: 100.00 USD")
+
+    def test_report_dashboard_income_category_totals_do_not_include_expenses(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Donation: 700.00 TRY")
+        self.assertNotContains(response, "Donation: 950.00 TRY")
+
+    def test_report_dashboard_income_category_totals_do_not_include_transfers(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Donation: 700.00 TRY")
+        self.assertNotContains(response, "Donation: 1699.00 TRY")
+
+    def test_report_dashboard_displays_expenses_by_category_section(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Kategoriye Göre Gider")
+
+    def test_report_dashboard_displays_expense_category_totals(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Rent: 250.00 TRY")
+        self.assertContains(response, "Bills: 75.00 TRY")
+
+    def test_report_dashboard_expense_category_totals_show_currency(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Rent: 250.00 TRY")
+        self.assertContains(response, "Rent: 40.00 USD")
+
+    def test_report_dashboard_expense_category_totals_do_not_include_income(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Rent: 250.00 TRY")
+        self.assertNotContains(response, "Rent: 950.00 TRY")
+
+    def test_report_dashboard_expense_category_totals_do_not_include_transfers(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Rent: 250.00 TRY")
+        self.assertNotContains(response, "Rent: 1249.00 TRY")
+
+    def test_report_dashboard_category_totals_do_not_mix_currencies(self):
+        self._create_category_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Donation: 700.00 TRY")
+        self.assertContains(response, "Donation: 100.00 USD")
+        self.assertContains(response, "Rent: 250.00 TRY")
+        self.assertContains(response, "Rent: 40.00 USD")
+        self.assertNotContains(response, "Donation: 800.00 TRY")
+        self.assertNotContains(response, "Rent: 290.00 TRY")
+
+    def test_report_dashboard_category_totals_respect_date_range(self):
+        self._create_category_date_range_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "2026-06-01", "end_date": "2026-06-30"},
+        )
+
+        self.assertContains(response, "Donation: 700.00 TRY")
+        self.assertContains(response, "Rent: 75.00 TRY")
+        self.assertNotContains(response, "Donation: 1000.00 TRY")
+
+    def test_report_dashboard_displays_empty_income_category_message_when_no_income(self):
+        self.create_transaction(
+            transaction_type="expense",
+            amount=Decimal("75.00"),
+            source_account=self.create_account(name="No Income Cash Account"),
+            category=self.expense_category,
+            created_by=self.admin_user,
+        )
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Gelir kategorisi bulunamadı.")
+
+    def test_report_dashboard_displays_empty_expense_category_message_when_no_expenses(self):
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("500.00"),
+            target_account=self.create_account(name="No Expense Cash Account"),
+            category=self.income_category,
+            created_by=self.admin_user,
+        )
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Gider kategorisi bulunamadı.")

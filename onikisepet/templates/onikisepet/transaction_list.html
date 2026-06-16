@@ -1,25 +1,140 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Transactions</title>
-</head>
-<body>
-    <h1>Transactions</h1>
+{% extends "onikisepet/base.html" %}
 
-    {% if transactions %}
-        <ul>
-            {% for transaction in transactions %}
-                <li>
-                    {{ transaction.date }} -
-                    {{ transaction.get_transaction_type_display }} -
-                    {{ transaction.amount }} {{ transaction.currency }} -
-                    {{ transaction.description|default:"No description" }}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No transactions found.</p>
-    {% endif %}
-</body>
-</html>
+{% block title %}İşlemler | On İki Sepet{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .transaction-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: "Trebuchet MS", Verdana, sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .transaction-table th,
+        .transaction-table td {
+            border-bottom: 1px solid rgba(217, 207, 188, 0.85);
+            padding: 12px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .transaction-table th {
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .transaction-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .amount-cell {
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .receipt-link {
+            color: var(--panel-strong);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .empty-cell {
+            color: var(--muted);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <h1>İşlemler</h1>
+
+        {% if transactions %}
+            <div class="transaction-table-wrapper">
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Tarih</th>
+                            <th scope="col">İşlem Tipi</th>
+                            <th scope="col">Tutar</th>
+                            <th scope="col">Ödeyen/Alıcı</th>
+                            <th scope="col">Kaynak Hesap</th>
+                            <th scope="col">Hedef Hesap</th>
+                            <th scope="col">Kategori</th>
+                            <th scope="col">Açıklama</th>
+                            <th scope="col">Fiş</th>
+                            {% if can_create_transactions %}
+                                <th scope="col">İşlem</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date|date:"Y-m-d" }}</td>
+                                <td>{{ transaction.get_transaction_type_display }}</td>
+                                <td class="amount-cell">{{ transaction.amount|floatformat:2 }} {{ transaction.currency }}</td>
+                                <td>
+                                    {% if transaction.payee %}
+                                        {{ transaction.payee }}
+                                    {% else %}
+                                        <span class="empty-cell">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.source_account %}
+                                        {{ transaction.source_account.name }}
+                                    {% else %}
+                                        <span class="empty-cell">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.target_account %}
+                                        {{ transaction.target_account.name }}
+                                    {% else %}
+                                        <span class="empty-cell">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.category %}
+                                        {{ transaction.category.name }}
+                                    {% else %}
+                                        <span class="empty-cell">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.description %}
+                                        {{ transaction.description }}
+                                    {% else %}
+                                        <span class="empty-cell">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for receipt in transaction.receipts.all %}
+                                        <a class="receipt-link" href="{% url 'receipt_download' receipt.pk %}">Fiş İndir</a>
+                                    {% empty %}
+                                        <span class="empty-cell">—</span>
+                                    {% endfor %}
+                                </td>
+                                {% if can_create_transactions %}
+                                    <td>
+                                        <a class="receipt-link" href="{% url 'transaction_edit' transaction.pk %}">Düzenle</a>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>Henüz işlem bulunamadı.</p>
+        {% endif %}
+    </section>
+{% endblock %}

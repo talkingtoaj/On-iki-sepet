@@ -1,0 +1,259 @@
+# KUT Finans Yönetim Sistemi (On İki Sepet)
+
+KUT Kilisesi için geliştirilen Django tabanlı finans yönetim sistemi. Nakit kasa (Defter), banka hesapları ve online bağışları tek merkezde birleştirir; gelir, gider ve transfer işlemlerini ayrı tutar; TRY, USD ve EUR para birimlerini karıştırmadan raporlar.
+
+## Gereksinimler
+
+- **Python:** 3.13 veya üzeri (`pyproject.toml` ve `.python-version` ile uyumlu)
+- **Paket yöneticisi:** [uv](https://docs.astral.sh/uv/) (önerilen) veya `pip`
+- **Veritabanı (yerel):** SQLite (ek kurulum gerekmez)
+- **Veritabanı (production hedefi):** PostgreSQL
+
+## Kurulum
+
+### 1. Depoyu klonlayın
+
+```bash
+git clone <repo-url>
+cd "On iki sepet"
+```
+
+### 2. Bağımlılıkları kurun
+
+**uv ile (önerilen):**
+
+```bash
+uv sync
+```
+
+**pip ile:**
+
+```bash
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+source .venv/bin/activate
+
+pip install -e .
+```
+
+### 3. Veritabanı migration'larını uygulayın
+
+```bash
+uv run python manage.py migrate
+```
+
+`uv` kullanmıyorsanız komutların başındaki `uv run` kısmını kaldırın:
+
+```bash
+python manage.py migrate
+```
+
+### 4. Yönetici (superuser) oluşturun
+
+```bash
+uv run python manage.py createsuperuser
+```
+
+Superuser; kategori, hesap ve tüm işlem türlerini oluşturabilir. Ayrıca Django admin paneline tam erişime sahiptir.
+
+### 5. Kullanıcı gruplarını oluşturun
+
+Uygulama iki özel grup kullanır:
+
+| Grup | Yetki özeti |
+|------|-------------|
+| **Data Entry** (Finans Görevlisi) | İşlem oluşturma ve düzenleme, listeleme, fiş indirme |
+| **Viewer** (Liderlik) | Salt okunur sayfalar ve fiş indirme |
+
+**Django admin üzerinden:**
+
+1. `http://127.0.0.1:8000/admin/` adresine superuser ile giriş yapın
+2. **Authentication and Authorization → Groups** bölümünden `Data Entry` ve `Viewer` gruplarını oluşturun
+3. **Users** bölümünden kullanıcıları ilgili gruplara ekleyin
+
+**Django shell ile:**
+
+```bash
+uv run python manage.py shell
+```
+
+```python
+from django.contrib.auth.models import Group
+
+Group.objects.get_or_create(name="Data Entry")
+Group.objects.get_or_create(name="Viewer")
+```
+
+Kullanıcıyı gruba eklemek için admin panelini veya shell'i kullanabilirsiniz:
+
+```python
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+
+user = get_user_model().objects.get(username="ornek_kullanici")
+group = Group.objects.get(name="Data Entry")
+user.groups.add(group)
+```
+
+```bash
+python manage.py create_default_groups
+```
+
+### 6. KUT hesaplarını yükleyin
+
+```bash
+python manage.py load_kut_accounts
+```
+
+Bu komut kasa, gelir hesabı (Garanti), gider hesabı, Omega/Deprem/Merhamet hesaplarını oluşturur. `opening_balance` değerleri sonradan admin panelinden güncellenebilir.
+
+## Geliştirme sunucusu
+
+```bash
+uv run python manage.py runserver
+```
+
+Tarayıcıda:
+
+- Ana sayfa: http://127.0.0.1:8000/
+- Django admin: http://127.0.0.1:8000/admin/
+
+Özel sayfalar giriş gerektirir. Oturum açmak için önce `/admin/` üzerinden giriş yapmanız yeterlidir; oturum tüm uygulama genelinde geçerlidir.
+
+Yerel geliştirmede yüklenen fiş dosyaları `media/receipts/` altında saklanır. `DEBUG=True` iken dosyalar `/media/` URL'si üzerinden sunulur.
+
+## Testleri çalıştırma
+
+Tüm test paketi:
+
+```bash
+uv run python manage.py test onikisepet
+```
+
+Belirli bir test dosyası:
+
+```bash
+uv run python manage.py test onikisepet.tests.test_report_dashboard_views
+```
+
+## Ana URL'ler
+
+| URL | Açıklama |
+|-----|----------|
+| `/` | Ana sayfa (finans dashboard) |
+| `/admin/` | Django yönetim paneli |
+| `/reports/` | Finansal özet raporu (aylık/yıllık preset) |
+| `/transactions/` | İşlem listesi |
+| `/transactions/<id>/edit/` | İşlem düzenleme (audit log) |
+| `/transactions/create/` | Genel işlem oluşturma |
+| `/cash-incomes/create/` | Nakit gelir (Defter elden bağış) |
+| `/cash-expenses/create/` | Nakit gider (fiş yükleme) |
+| `/bank-expenses/create/` | Banka gideri |
+| `/online-donations/create/` | Online bağış geliri |
+| `/transfers/create/` | Hesaplar arası transfer |
+| `/accounts/` | Hesap listesi |
+| `/accounts/create/` | Hesap oluşturma (yalnızca admin) |
+| `/categories/` | Kategori listesi |
+| `/categories/create/` | Kategori oluşturma (yalnızca admin) |
+| `/receipts/<id>/download/` | Fiş indirme |
+
+## Ortam değişkenleri
+
+| Değişken | Zorunlu | Açıklama |
+|----------|---------|----------|
+| `DJANGO_SECRET_KEY` | Production'da evet | Django gizli anahtarı. Yerelde tanımlanmazsa geliştirme anahtarı kullanılır. |
+| `DJANGO_FILE_STORAGE_BACKEND` | Hayır | `local` (varsayılan) veya `gcs` |
+| `GCS_MEDIA_BUCKET_NAME` | GCS kullanımında evet | Google Cloud Storage bucket adı |
+| `GCS_MEDIA_LOCATION` | Hayır | Bucket içi klasör (varsayılan: `receipts`) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | GCS kullanımında evet | GCP servis hesabı JSON dosyasının yolu (repoya eklemeyin) |
+
+**Yerel dosya depolama (varsayılan):**
+
+```bash
+# Ek değişken gerekmez; fişler media/ altına yazılır
+```
+
+**Google Cloud Storage (production):**
+
+```bash
+export DJANGO_FILE_STORAGE_BACKEND=gcs
+export GCS_MEDIA_BUCKET_NAME=oniki-sepet-media
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+```
+
+GCS modu için production ortamında `django-storages` ve `google-cloud-storage` paketlerinin kurulması gerekir.
+
+**Production veritabanı (PostgreSQL — hedef mimari):**
+
+Proje standartları production için PostgreSQL öngörür. Yerel geliştirmede SQLite kullanılır (`db.sqlite3`). Production deployment'ta tipik olarak şu değişkenler tanımlanır (hosting ortamınıza göre uyarlayın):
+
+```bash
+export DATABASE_URL=postgres://kullanici:sifre@localhost:5432/oniki_sepet
+# veya ayrı ayrı:
+export DB_NAME=oniki_sepet
+export DB_USER=oniki_user
+export DB_PASSWORD=...
+export DB_HOST=localhost
+export DB_PORT=5432
+```
+
+`.env` dosyasını kullanabilirsiniz; bu dosya `.gitignore` içinde yer alır ve repoya commit edilmemelidir.
+
+## Finansal kurallar (özet)
+
+Bu kurallar raporlama ve hesap bakiyesi hesaplamalarının temelidir:
+
+- **Transferler gelir sayılmaz.**
+- **Transferler gider sayılmaz.**
+- Transferler yalnızca hesaplar arası para hareketi olarak kaydedilir.
+- Gelir, gider ve transfer kayıtları raporlarda birbirinden ayrı tutulur.
+- TRY, USD ve EUR toplamları birbirine karıştırılmaz; her para birimi kendi içinde raporlanır.
+- Hesap bakiyeleri işlem geçmişine göre hesaplanır; transferler gelir/gider toplamlarına dahil edilmez.
+
+- İşlemler silinemez; düzenlemeler audit log'a kaydedilir.
+- Transferler gelir/gider raporlarına dahil edilmez.
+
+## Production (GCP / PostgreSQL)
+
+Production ayarları `config/production_settings.py` dosyasında tanımlıdır:
+
+```bash
+export DJANGO_SETTINGS_MODULE=config.production_settings
+export DJANGO_SECRET_KEY=...
+export DJANGO_ALLOWED_HOSTS=finans.kutkilisesi.org
+export DATABASE_URL=postgres://user:pass@host:5432/oniki_sepet
+export DJANGO_FILE_STORAGE_BACKEND=gcs
+export GCS_MEDIA_BUCKET_NAME=kut-finans-media
+```
+
+Docker ile çalıştırma:
+
+```bash
+docker build -t kut-finans .
+docker run -p 8000:8000 --env-file .env kut-finans
+```
+
+Cloud Run için: container'ı GCP Artifact Registry'ye push edin, Cloud SQL PostgreSQL bağlantısını `DATABASE_URL` ile verin, GCS bucket'ı fiş depolama için yapılandırın.
+
+Detaylı geliştirme kuralları için `onikisepet/docs/standards.md` dosyasına bakın.
+
+## Proje yapısı (kısa)
+
+```text
+config/           # Django proje ayarları (settings, urls, storage)
+onikisepet/       # Ana uygulama (modeller, view'lar, şablonlar, testler)
+manage.py         # Django yönetim komutu
+pyproject.toml    # Bağımlılıklar ve Python sürümü
+media/            # Yerel fiş dosyaları (git'e dahil değil)
+```
+
+## Teknoloji
+
+- Django 5.2
+- Django Templates (sunucu taraflı render)
+- SQLite (yerel) / PostgreSQL (production hedefi)
+- Yerel dosya sistemi veya Google Cloud Storage (fişler)

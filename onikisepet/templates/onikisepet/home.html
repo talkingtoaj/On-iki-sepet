@@ -1,0 +1,167 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}Ana Sayfa | KUT Finans{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card,
+        .panel {
+            background: rgba(255, 250, 240, 0.88);
+            border: 1px solid rgba(217, 207, 188, 0.9);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: 24px;
+        }
+
+        .summary-card h2,
+        .panel h2 {
+            margin-bottom: 16px;
+            font-size: 1.25rem;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(217, 207, 188, 0.7);
+            font-family: "Trebuchet MS", Verdana, sans-serif;
+        }
+
+        .metric-value {
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .balance-list,
+        .expense-list,
+        .quick-actions {
+            display: grid;
+            gap: 10px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .balance-item,
+        .expense-item,
+        .quick-actions a {
+            border: 1px solid rgba(217, 207, 188, 0.85);
+            border-radius: 16px;
+            background: #fffdf8;
+            padding: 12px 14px;
+            font-family: "Trebuchet MS", Verdana, sans-serif;
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--panel-strong);
+        }
+
+        .balance-item,
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        @media (max-width: 820px) {
+            .dashboard-grid,
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-panel" style="margin-bottom: 24px;">
+        <p class="eyebrow">KUT Kilisesi Finans</p>
+        <h1>Finans Özeti</h1>
+        <p>
+            {{ month_start|date:"d F Y" }} – {{ month_end|date:"d F Y" }} dönemi için özet.
+        </p>
+    </section>
+
+    <div class="dashboard-grid">
+        <section class="summary-card">
+            <h2>TRY — Bu Ay</h2>
+            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.TRY.total_income|floatformat:2 }} TRY</span></p>
+            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.TRY.total_expenses|floatformat:2 }} TRY</span></p>
+            <p class="metric">Net: <span class="metric-value">{{ currency_summary.TRY.net_financial_status|floatformat:2 }} TRY</span></p>
+        </section>
+        <section class="summary-card">
+            <h2>USD — Bu Ay</h2>
+            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.USD.total_income|floatformat:2 }} USD</span></p>
+            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.USD.total_expenses|floatformat:2 }} USD</span></p>
+            <p class="metric">Net: <span class="metric-value">{{ currency_summary.USD.net_financial_status|floatformat:2 }} USD</span></p>
+        </section>
+        <section class="summary-card">
+            <h2>EUR — Bu Ay</h2>
+            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.EUR.total_income|floatformat:2 }} EUR</span></p>
+            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.EUR.total_expenses|floatformat:2 }} EUR</span></p>
+            <p class="metric">Net: <span class="metric-value">{{ currency_summary.EUR.net_financial_status|floatformat:2 }} EUR</span></p>
+        </section>
+    </div>
+
+    <div class="two-col">
+        <section class="panel">
+            <h2>En Büyük Gider Kalemleri (Bu Ay)</h2>
+            {% if top_expenses %}
+                <ul class="expense-list">
+                    {% for item in top_expenses %}
+                        <li class="expense-item">
+                            <span>{{ item.category.name }}</span>
+                            <span>{{ item.total|floatformat:2 }} {{ item.currency }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>Bu ay henüz gider kaydı yok.</p>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <h2>Hızlı İşlemler</h2>
+            <ul class="quick-actions">
+                {% if can_create_transactions %}
+                    <li><a href="{% url 'cash_income_create' %}">Nakit Gelir</a></li>
+                    <li><a href="{% url 'cash_expense_create' %}">Nakit Gider</a></li>
+                    <li><a href="{% url 'bank_expense_create' %}">Banka Gideri</a></li>
+                    <li><a href="{% url 'online_donation_income_create' %}">Online Bağış</a></li>
+                    <li><a href="{% url 'transfer_create' %}">Transfer</a></li>
+                {% endif %}
+                <li><a href="{% url 'report_dashboard' %}">Detaylı Raporlar</a></li>
+                <li><a href="{% url 'transaction_list' %}">Tüm İşlemler</a></li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="panel" style="margin-top: 18px;">
+        <h2>Hesap Bakiyeleri (Güncel)</h2>
+        {% if account_balances %}
+            <ul class="balance-list">
+                {% for item in account_balances %}
+                    <li class="balance-item">
+                        <span>{{ item.account.name }}</span>
+                        <span>{{ item.balance|floatformat:2 }} {{ item.account.currency }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Henüz hesap tanımlanmamış.</p>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -1,7 +1,15 @@
-<h1>Create Account</h1>
+{% extends "onikisepet/base.html" %}
 
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Save</button>
-</form>
+{% block title %}Hesap Oluştur | On İki Sepet{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <h1>Hesap Oluştur</h1>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="button" type="submit">Kaydet</button>
+        </form>
+    </section>
+{% endblock %}

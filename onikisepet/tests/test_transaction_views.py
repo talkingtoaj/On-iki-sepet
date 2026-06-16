@@ -321,4 +321,4 @@ class TransactionViewTests(TransactionTestMixin, TestCase):
         response = self.client.get(self.transaction_list_url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No transactions found.")
+        self.assertContains(response, "Henüz işlem bulunamadı.")

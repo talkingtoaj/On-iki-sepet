@@ -17,7 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from config.storage import get_debug_media_urlpatterns
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("onikisepet.urls")),
-]
+] + get_debug_media_urlpatterns()

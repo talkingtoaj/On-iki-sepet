@@ -1,11 +1,19 @@
-<h1>Accounts</h1>
+{% extends "onikisepet/base.html" %}
 
-{% if accounts %}
-  <ul>
-    {% for account in accounts %}
-      <li>{{ account.name }}</li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>No accounts found.</p>
-{% endif %}
+{% block title %}Hesaplar | On İki Sepet{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <h1>Hesaplar</h1>
+
+        {% if accounts %}
+            <ul>
+                {% for account in accounts %}
+                    <li>{{ account.name }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No accounts found.</p>
+        {% endif %}
+    </section>
+{% endblock %}

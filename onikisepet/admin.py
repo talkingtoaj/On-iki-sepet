@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Account, Category, Receipt, Transaction
+from .models import Account, AuditLog, Category, Receipt, Transaction
 
 
 @admin.register(Category)
@@ -63,6 +63,9 @@ class TransactionAdmin(admin.ModelAdmin):
     ordering = ["-date", "-created_at"]
     readonly_fields = ["created_at", "updated_at"]
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
     def save_model(self, request, obj, form, change):
         if not getattr(obj, "created_by", None):
             obj.created_by = request.user
@@ -90,3 +93,36 @@ class ReceiptAdmin(admin.ModelAdmin):
     readonly_fields = [
         "uploaded_at",
     ]
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = [
+        "changed_at",
+        "action",
+        "content_type",
+        "object_id",
+        "changed_by",
+    ]
+    list_filter = ["action", "content_type", "changed_by"]
+    readonly_fields = [
+        "content_type",
+        "object_id",
+        "action",
+        "changed_by",
+        "changed_at",
+        "before",
+        "after",
+    ]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

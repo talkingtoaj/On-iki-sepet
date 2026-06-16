@@ -1,11 +1,19 @@
-<h1>Categories</h1>
+{% extends "onikisepet/base.html" %}
 
-{% if categories %}
-  <ul>
-    {% for category in categories %}
-      <li>{{ category.name }}</li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>No categories found.</p>
-{% endif %}
+{% block title %}Kategoriler | On İki Sepet{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <h1>Kategoriler</h1>
+
+        {% if categories %}
+            <ul>
+                {% for category in categories %}
+                    <li>{{ category.name }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No categories found.</p>
+        {% endif %}
+    </section>
+{% endblock %}

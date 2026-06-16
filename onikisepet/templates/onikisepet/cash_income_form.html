@@ -1,10 +1,11 @@
 {% extends "onikisepet/base.html" %}
 
-{% block title %}İşlem Oluştur | On İki Sepet{% endblock %}
+{% block title %}Nakit Gelir | On İki Sepet{% endblock %}
 
 {% block content %}
     <section class="content-panel">
-        <h1>İşlem Oluştur</h1>
+        <h1>Nakit Gelir</h1>
+        <p class="eyebrow">Defter'deki elden bağışların karşılığı olarak kaydedin.</p>
 
         <form method="post">
             {% csrf_token %}
