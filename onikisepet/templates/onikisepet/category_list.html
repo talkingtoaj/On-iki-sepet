@@ -1,19 +1,56 @@
 {% extends "onikisepet/base.html" %}
 
-{% block title %}Kategoriler | On İki Sepet{% endblock %}
+{% block title %}Kategoriler | KUT Finans{% endblock %}
 
 {% block content %}
     <section class="content-panel">
-        <h1>Kategoriler</h1>
+        <header class="page-header">
+            <p class="eyebrow">Yönetim</p>
+            <h1>Kategoriler</h1>
+            <p class="text-muted">Gelir ve gider kategorileri.</p>
+        </header>
+
+        {% if can_manage_categories %}
+            <div class="page-actions">
+                <a class="btn btn--primary" href="{% url 'category_create' %}">Kategori Oluştur</a>
+            </div>
+        {% endif %}
 
         {% if categories %}
-            <ul>
-                {% for category in categories %}
-                    <li>{{ category.name }}</li>
-                {% endfor %}
-            </ul>
+            <div class="data-table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Kategori</th>
+                            <th scope="col">Tür</th>
+                            <th scope="col">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                            <tr>
+                                <td>{{ category.name }}</td>
+                                <td>
+                                    {% if category.category_type == "income" %}
+                                        <span class="badge badge--income">{{ category.get_category_type_display }}</span>
+                                    {% else %}
+                                        <span class="badge badge--expense">{{ category.get_category_type_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if category.is_active %}
+                                        <span class="badge badge--active">Aktif</span>
+                                    {% else %}
+                                        <span class="badge badge--inactive">Pasif</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p>No categories found.</p>
+            <p class="empty-state">No categories found.</p>
         {% endif %}
     </section>
 {% endblock %}

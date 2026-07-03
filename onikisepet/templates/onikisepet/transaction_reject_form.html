@@ -1,0 +1,23 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}İşlem Reddet | On İki Sepet{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <h1>İşlemi Reddet</h1>
+        <p>
+            {{ transaction.date|date:"Y-m-d" }} —
+            {{ transaction.get_transaction_type_display }} —
+            {{ transaction.amount }} {{ transaction.currency }}
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <p>
+                <button type="submit">Reddet</button>
+                <a href="{% url 'transaction_list' %}">İptal</a>
+            </p>
+        </form>
+    </section>
+{% endblock %}

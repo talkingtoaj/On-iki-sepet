@@ -1,0 +1,76 @@
+Creating test database for alias 'default'...
+..........................................................................................................................................................................................................................................................................................................................................................................................EEEEEEE................................................................................................................
+======================================================================
+ERROR: test_approved_income_is_included_in_report_totals (onikisepet.tests.test_transaction_approval.TransactionApprovalReportTests.test_approved_income_is_included_in_report_totals)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sezermintaz/On-iki-sepet/onikisepet/tests/test_transaction_approval.py", line 153, in setUp
+    self.viewer_user = self.create_user_with_profile(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionApprovalReportTests' object has no attribute 'create_user_with_profile'
+
+======================================================================
+ERROR: test_pending_income_is_excluded_from_report_totals (onikisepet.tests.test_transaction_approval.TransactionApprovalReportTests.test_pending_income_is_excluded_from_report_totals)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sezermintaz/On-iki-sepet/onikisepet/tests/test_transaction_approval.py", line 153, in setUp
+    self.viewer_user = self.create_user_with_profile(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionApprovalReportTests' object has no attribute 'create_user_with_profile'
+
+======================================================================
+ERROR: test_income_created_by_admin_is_auto_approved (onikisepet.tests.test_transaction_approval.TransactionApprovalRulesTests.test_income_created_by_admin_is_auto_approved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sezermintaz/On-iki-sepet/onikisepet/tests/test_transaction_approval.py", line 15, in setUp
+    self.data_entry_user = self.create_user_with_profile(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionApprovalRulesTests' object has no attribute 'create_user_with_profile'
+
+======================================================================
+ERROR: test_income_created_by_data_entry_starts_pending (onikisepet.tests.test_transaction_approval.TransactionApprovalRulesTests.test_income_created_by_data_entry_starts_pending)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sezermintaz/On-iki-sepet/onikisepet/tests/test_transaction_approval.py", line 15, in setUp
+    self.data_entry_user = self.create_user_with_profile(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionApprovalRulesTests' object has no attribute 'create_user_with_profile'
+
+======================================================================
+ERROR: test_transfer_created_by_admin_starts_pending (onikisepet.tests.test_transaction_approval.TransactionApprovalRulesTests.test_transfer_created_by_admin_starts_pending)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sezermintaz/On-iki-sepet/onikisepet/tests/test_transaction_approval.py", line 15, in setUp
+    self.data_entry_user = self.create_user_with_profile(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionApprovalRulesTests' object has no attribute 'create_user_with_profile'
+
+======================================================================
+ERROR: test_admin_can_approve_pending_transaction (onikisepet.tests.test_transaction_approval.TransactionApprovalViewTests.test_admin_can_approve_pending_transaction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sezermintaz/On-iki-sepet/onikisepet/tests/test_transaction_approval.py", line 101, in setUp
+    self.data_entry_user = self.create_user_with_profile(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionApprovalViewTests' object has no attribute 'create_user_with_profile'
+
+======================================================================
+ERROR: test_data_entry_cannot_approve_transaction (onikisepet.tests.test_transaction_approval.TransactionApprovalViewTests.test_data_entry_cannot_approve_transaction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sezermintaz/On-iki-sepet/onikisepet/tests/test_transaction_approval.py", line 101, in setUp
+    self.data_entry_user = self.create_user_with_profile(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TransactionApprovalViewTests' object has no attribute 'create_user_with_profile'
+
+----------------------------------------------------------------------
+Ran 497 tests in 138.079s
+
+FAILED (errors=7)
+Destroying test database for alias 'default'...
+Found 497 test(s).
+System check identified no issues (0 silenced).
+Oluşturulan hesap sayısı: 8
+Oluşturulan hesap sayısı: 8
+Oluşturulan hesap sayısı: 8
+Zaten mevcut hesap sayısı: 8

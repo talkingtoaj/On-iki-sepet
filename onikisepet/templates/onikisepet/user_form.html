@@ -1,0 +1,165 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}{{ page_title }} | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <header class="page-header">
+            <p class="eyebrow">Yönetim</p>
+            <h1>{{ page_title }}</h1>
+        </header>
+
+        <form class="form" method="post"{% if edited_user %} autocomplete="off"{% endif %}>
+            {% csrf_token %}
+            {% if edited_user %}
+                <input
+                    type="hidden"
+                    name="password_reset_enabled"
+                    id="password-reset-enabled"
+                    value="{% if show_password_reset %}1{% else %}0{% endif %}"
+                >
+                {% for field in form %}
+                    {% if field.name != "new_password1" and field.name != "new_password2" %}
+                        <div class="form-field{% if field.field.widget.input_type == 'checkbox' %} form-field--checkbox{% endif %}{% if field.errors %} form-field--error{% endif %}">
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                {{ field }}
+                                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {% else %}
+                                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                            {% endif %}
+                            {% if field.errors %}
+                                <ul class="form-error">
+                                    {% for error in field.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            {% if field.help_text %}
+                                <p class="form-help">{{ field.help_text }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% if form.non_field_errors %}
+                    <ul class="form-error">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                <div class="password-reset-controls">
+                    <button
+                        type="button"
+                        class="btn btn--ghost btn--sm"
+                        id="toggle-password-reset"
+                        {% if show_password_reset %}hidden{% endif %}
+                    >Şifreyi yenile</button>
+                </div>
+
+                <div
+                    id="password-reset-panel"
+                    class="password-reset-panel"
+                    {% if not show_password_reset %}hidden{% endif %}
+                >
+                    {% if show_password_reset %}
+                        <div class="form-field{% if form.new_password1.errors %} form-field--error{% endif %}">
+                            <label class="form-label" for="{{ form.new_password1.id_for_label }}">{{ form.new_password1.label }}</label>
+                            {{ form.new_password1 }}
+                            {% if form.new_password1.errors %}
+                                <ul class="form-error">
+                                    {% for error in form.new_password1.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        <div class="form-field{% if form.new_password2.errors %} form-field--error{% endif %}">
+                            <label class="form-label" for="{{ form.new_password2.id_for_label }}">{{ form.new_password2.label }}</label>
+                            {{ form.new_password2 }}
+                            {% if form.new_password2.errors %}
+                                <ul class="form-error">
+                                    {% for error in form.new_password2.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <template id="password-reset-fields-template">
+                    <div class="form-field">
+                        <label class="form-label" for="{{ form.new_password1.id_for_label }}">{{ form.new_password1.label }}</label>
+                        <input
+                            type="password"
+                            name="new_password1"
+                            id="{{ form.new_password1.id_for_label }}"
+                            class="form-control"
+                            autocomplete="new-password"
+                        >
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="{{ form.new_password2.id_for_label }}">{{ form.new_password2.label }}</label>
+                        <input
+                            type="password"
+                            name="new_password2"
+                            id="{{ form.new_password2.id_for_label }}"
+                            class="form-control"
+                            autocomplete="new-password"
+                        >
+                    </div>
+                </template>
+            {% else %}
+                {% include "onikisepet/includes/form_fields.html" %}
+            {% endif %}
+
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">{{ submit_label }}</button>
+                <a class="btn btn--secondary" href="{% url 'user_list' %}">İptal</a>
+            </div>
+        </form>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+{% if edited_user %}
+<script>
+(function () {
+    var form = document.querySelector("form.form");
+    var toggleBtn = document.getElementById("toggle-password-reset");
+    var panel = document.getElementById("password-reset-panel");
+    var enabledInput = document.getElementById("password-reset-enabled");
+    var fieldsTemplate = document.getElementById("password-reset-fields-template");
+    if (!form || !toggleBtn || !panel || !enabledInput) {
+        return;
+    }
+
+    function mountPasswordFields() {
+        if (panel.querySelector('input[name="new_password1"]') || !fieldsTemplate) {
+            return;
+        }
+        panel.appendChild(fieldsTemplate.content.cloneNode(true));
+    }
+
+    toggleBtn.addEventListener("click", function () {
+        enabledInput.value = "1";
+        mountPasswordFields();
+        panel.removeAttribute("hidden");
+        toggleBtn.setAttribute("hidden", "");
+        var firstInput = panel.querySelector("input");
+        if (firstInput) {
+            firstInput.focus();
+        }
+    });
+
+    form.addEventListener("submit", function () {
+        if (panel.hasAttribute("hidden")) {
+            enabledInput.value = "0";
+        }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

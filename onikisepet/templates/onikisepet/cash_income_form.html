@@ -1,16 +1,21 @@
 {% extends "onikisepet/base.html" %}
 
-{% block title %}Nakit Gelir | On İki Sepet{% endblock %}
+{% block title %}Nakit Gelir | KUT Finans{% endblock %}
 
 {% block content %}
     <section class="content-panel">
-        <h1>Nakit Gelir</h1>
-        <p class="eyebrow">Defter'deki elden bağışların karşılığı olarak kaydedin.</p>
+        <header class="page-header">
+            <p class="eyebrow">Kayıt</p>
+            <h1>Nakit Gelir</h1>
+        </header>
 
-        <form method="post">
+        <form class="form" method="post">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button class="button" type="submit">Kaydet</button>
+            {% include "onikisepet/includes/form_fields.html" %}
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Kaydet</button>
+                <a class="btn btn--secondary" href="{% url 'transaction_list' %}">İptal</a>
+            </div>
         </form>
     </section>
 {% endblock %}

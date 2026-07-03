@@ -1,0 +1,19 @@
+{% load l10n %}
+{% localize off %}
+<div class="currency-panel">
+    <h3>Hesap Bakiyeleri</h3>
+    <p class="currency-panel__period">Güncel bakiyeler (tüm onaylı işlemler dahil)</p>
+    {% if account_balances %}
+        <ul class="currency-panel__list">
+            {% for item in account_balances %}
+                <li>
+                    <span>{{ item.account.name }}</span>
+                    <span>{{ item.balance|stringformat:".2f" }} {{ item.account.currency }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Henüz aktif hesap tanımlanmamış.</p>
+    {% endif %}
+</div>
+{% endlocalize %}

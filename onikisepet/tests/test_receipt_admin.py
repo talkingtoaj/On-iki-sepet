@@ -17,6 +17,7 @@ class ReceiptAdminTests(TestCase):
         expected_fields = [
             "transaction",
             "original_filename",
+            "file_type",
             "uploaded_by",
             "uploaded_at",
         ]
@@ -27,6 +28,7 @@ class ReceiptAdminTests(TestCase):
         receipt_admin = self.get_receipt_admin()
 
         expected_filters = [
+            "file_type",
             "uploaded_at",
             "uploaded_by",
         ]

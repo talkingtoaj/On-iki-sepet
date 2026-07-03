@@ -720,6 +720,63 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
         self.assertNotContains(response, "Toplam Gelir: 80.00 TRY")
         self.assertNotContains(response, "Toplam Gider: 130.00 TRY")
 
+    def test_account_balances_ignore_date_filter(self):
+        accounts = self._create_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "2099-01-01", "end_date": "2099-12-31"},
+        )
+
+        self.assertContains(response, "Toplam Gelir: 0.00 TRY")
+        self.assertContains(response, "Toplam Gider: 0.00 TRY")
+        self.assertContains(response, "Cash Account")
+        self.assertContains(response, "800.00")
+        self.assertContains(response, "Online Donation Account")
+        self.assertContains(response, "400.00")
+        self.assertContains(response, "Main Expense Account")
+        self.assertContains(response, "100.00")
+
+    def test_report_dashboard_displays_transfer_movements(self):
+        self._create_report_scenario()
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, "Move donation funds")
+        self.assertContains(response, "100.00 TRY")
+
+    def test_transfer_movements_respect_date_filter(self):
+        accounts = self._create_report_accounts()
+        self.create_transaction(
+            transaction_type="transfer",
+            amount=Decimal("50.00"),
+            source_account=accounts["online_donation_account"],
+            target_account=accounts["main_expense_account"],
+            description="June transfer",
+            date="2026-06-10",
+            created_by=self.admin_user,
+        )
+        self.create_transaction(
+            transaction_type="transfer",
+            amount=Decimal("75.00"),
+            source_account=accounts["cash_account"],
+            target_account=accounts["main_expense_account"],
+            description="July transfer",
+            date="2026-07-10",
+            created_by=self.admin_user,
+        )
+        self._login_viewer()
+
+        response = self.client.get(
+            self.report_dashboard_url,
+            {"start_date": "2026-06-01", "end_date": "2026-06-30"},
+        )
+
+        self.assertContains(response, "June transfer")
+        self.assertNotContains(response, "July transfer")
+
     def test_report_dashboard_with_invalid_start_date_does_not_crash(self):
         self._create_date_range_scenario()
         self._login_viewer()

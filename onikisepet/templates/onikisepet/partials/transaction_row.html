@@ -1,0 +1,83 @@
+{% load l10n %}
+{% localize off %}
+<tbody data-transaction-row-group>
+    <tr
+        class="transaction-row transaction-row--expandable"
+        data-transaction-row
+        data-search-text="{{ transaction.date|date:'Y-m-d' }} {{ transaction.get_transaction_type_display }} {{ transaction.amount }} {{ transaction.currency }} {{ transaction.payee }} {% if transaction.source_account %}{{ transaction.source_account.name }}{% endif %} {% if transaction.target_account %}{{ transaction.target_account.name }}{% endif %} {% if transaction.category %}{{ transaction.category.name }}{% endif %} {{ transaction.description }}"
+        tabindex="0"
+        aria-expanded="false"
+        aria-controls="transaction-detail-{{ transaction.pk }}"
+    >
+        <td>{{ transaction.date|date:"Y-m-d" }}</td>
+        <td>{{ transaction.get_transaction_type_display }}</td>
+        <td class="amount-cell">{{ transaction.amount|stringformat:".2f" }} {{ transaction.currency }}</td>
+        <td>{{ transaction.payee|default:"-" }}</td>
+        <td>{% if transaction.source_account %}{{ transaction.source_account.name }}{% else %}-{% endif %}</td>
+        <td>{% if transaction.target_account %}{{ transaction.target_account.name }}{% else %}-{% endif %}</td>
+        <td>{% if transaction.category %}{{ transaction.category.name }}{% else %}-{% endif %}</td>
+        <td>{{ transaction.description|default:"-" }}</td>
+        <td>
+            <span class="badge badge--{{ transaction.approval_status }}">
+                {{ transaction.get_approval_status_display }}
+            </span>
+            {% if can_approve_transactions and transaction.approval_status == "pending" %}
+                <div class="approval-actions">
+                    <form
+                        method="post"
+                        action="{% url 'transaction_approve' transaction.pk %}"
+                        hx-post="{% url 'transaction_approve' transaction.pk %}"
+                        hx-target="closest [data-transaction-row-group]"
+                        hx-swap="outerHTML"
+                        hx-confirm="Bu işlemi onaylamak istediğinize emin misiniz?"
+                    >
+                        {% csrf_token %}
+                        <button type="submit" class="approve-button">Onayla</button>
+                    </form>
+                    <button
+                        type="button"
+                        class="reject-button"
+                        hx-get="{% url 'transaction_reject' transaction.pk %}"
+                        hx-target="#transaction-detail-cell-{{ transaction.pk }}"
+                        hx-swap="innerHTML"
+                        hx-on::before-request="document.getElementById('transaction-detail-{{ transaction.pk }}').removeAttribute('hidden')"
+                    >Reddet</button>
+                </div>
+            {% endif %}
+        </td>
+        <td>
+            {% for receipt in transaction.receipts.all %}
+                <a class="receipt-link" href="{% url 'receipt_download' receipt.pk %}">Fiş İndir</a>
+            {% empty %}
+                <span class="empty-cell">—</span>
+            {% endfor %}
+        </td>
+        {% if can_create_transactions %}
+            <td>
+                {% if transaction.approval_status == "pending" and transaction.created_by_id == user.id %}
+                    <a href="{% url 'transaction_edit' transaction.pk %}">Düzenle</a>
+                {% endif %}
+            </td>
+        {% endif %}
+    </tr>
+    <tr
+        id="transaction-detail-{{ transaction.pk }}"
+        class="transaction-detail-row"
+        hidden
+    >
+        <td
+            id="transaction-detail-cell-{{ transaction.pk }}"
+            colspan="{% if can_create_transactions %}11{% else %}10{% endif %}"
+            data-default-detail="Oluşturan: {{ transaction.created_by }}{% if transaction.approved_by %} · Onaylayan: {{ transaction.approved_by }}{% endif %}{% if transaction.rejection_reason %} · Red nedeni: {{ transaction.rejection_reason }}{% endif %}"
+        >
+            Oluşturan: {{ transaction.created_by }}
+            {% if transaction.approved_by %}
+                · Onaylayan: {{ transaction.approved_by }}
+            {% endif %}
+            {% if transaction.rejection_reason %}
+                · Red nedeni: {{ transaction.rejection_reason }}
+            {% endif %}
+        </td>
+    </tr>
+</tbody>
+{% endlocalize %}

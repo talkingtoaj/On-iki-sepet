@@ -1,0 +1,43 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}Onay Bekleyen Ekstreler | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <header class="page-header">
+            <p class="eyebrow">Banka ekstresi</p>
+            <h1>Onay bekleyen ekstreler</h1>
+        </header>
+
+        {% if bank_imports %}
+            <div class="data-table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Dosya</th>
+                            <th scope="col">Yükleyen</th>
+                            <th scope="col">Tarih</th>
+                            <th scope="col">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bank_import in bank_imports %}
+                            <tr>
+                                <td>{{ bank_import.original_filename }}</td>
+                                <td>{{ bank_import.uploaded_by.username }}</td>
+                                <td>{{ bank_import.uploaded_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'import_preview' bank_import.pk %}">Önizle</a>
+                                    ·
+                                    <a href="{% url 'import_confirm' bank_import.pk %}">Onayla</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">Onay bekleyen ekstre yok.</p>
+        {% endif %}
+    </section>
+{% endblock %}

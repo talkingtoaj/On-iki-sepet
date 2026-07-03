@@ -30,3 +30,19 @@ def resolve_report_period(period_value, *, reference_date=None):
         return start, end, period_value
 
     return None, None, ""
+
+
+PERIOD_LABELS = {
+    "this_month": "Bu ay",
+    "last_month": "Geçen ay",
+    "this_year": "Bu yıl",
+}
+
+
+def get_period_label(period_value):
+    return PERIOD_LABELS.get(period_value, "")
+
+
+def get_month_bounds(reference_date=None):
+    start, end, _ = resolve_report_period("this_month", reference_date=reference_date)
+    return start, end

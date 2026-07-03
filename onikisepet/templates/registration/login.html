@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Giriş | KUT Finans</title>
+    <link rel="stylesheet" href="{% static 'onikisepet/app.css' %}">
+</head>
+<body class="login-page">
+    <section class="login-panel">
+        <h1>KUT Finans</h1>
+        <p class="login-subtitle">Devam etmek için giriş yapın.</p>
+
+        {% if form.non_field_errors %}
+            <ul class="form-error" role="alert">
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form class="form" method="post">
+            {% csrf_token %}
+            <div class="form-field{% if form.username.errors %} form-field--error{% endif %}">
+                <label class="form-label" for="id_username">Kullanıcı adı</label>
+                <input
+                    class="form-control"
+                    id="id_username"
+                    name="username"
+                    type="text"
+                    autocomplete="username"
+                    required
+                    {% if form.username.value %}value="{{ form.username.value }}"{% endif %}
+                    {% if form.username.errors %}aria-invalid="true"{% endif %}
+                >
+                {% if form.username.errors %}
+                    <ul class="form-error" role="alert">
+                        {% for error in form.username.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            <div class="form-field{% if form.password.errors %} form-field--error{% endif %}">
+                <label class="form-label" for="id_password">Şifre</label>
+                <input
+                    class="form-control"
+                    id="id_password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                    {% if form.password.errors %}aria-invalid="true"{% endif %}
+                >
+                {% if form.password.errors %}
+                    <ul class="form-error" role="alert">
+                        {% for error in form.password.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Giriş yap</button>
+            </div>
+        </form>
+        <p class="login-links">
+            <a href="{% url 'password_reset' %}">Şifremi unuttum</a>
+        </p>
+    </section>
+</body>
+</html>

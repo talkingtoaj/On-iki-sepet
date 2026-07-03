@@ -99,7 +99,7 @@ class TransactionBusinessRuleTests(TransactionTestMixin, TestCase):
         transfer = self._create_transfer(amount=Decimal("25.00"))
         calculations = self.get_financial_calculations_module()
 
-        total = calculations.calculate_transfer_total([transfer])
+        total = calculations.calculate_transfer_total_for_currency([transfer], "TRY")
 
         self.assertEqual(total, Decimal("25.00"))
 
@@ -176,8 +176,9 @@ class TransactionBusinessRuleTests(TransactionTestMixin, TestCase):
         )
         calculations = self.get_financial_calculations_module()
 
-        total = calculations.calculate_total_net_position(
-            [self.cash_account, self.bank_account]
+        total = (
+            calculations.calculate_account_balance(self.cash_account)
+            + calculations.calculate_account_balance(self.bank_account)
         )
 
         self.assertEqual(total, Decimal("1500.00"))

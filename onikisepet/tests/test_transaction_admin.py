@@ -3,6 +3,8 @@ from decimal import Decimal
 from django.contrib import admin
 from django.test import RequestFactory, TestCase
 
+from onikisepet.models import Transaction
+
 from .helpers import TransactionTestMixin
 
 
@@ -48,6 +50,8 @@ class TransactionAdminTests(TransactionTestMixin, TestCase):
             "source_account",
             "target_account",
             "category",
+            "approval_status",
+            "approved_by",
             "created_by",
             "created_at",
             "updated_at",
@@ -60,6 +64,7 @@ class TransactionAdminTests(TransactionTestMixin, TestCase):
 
         expected_filters = [
             "transaction_type",
+            "approval_status",
             "currency",
             "date",
             "category",
@@ -84,29 +89,23 @@ class TransactionAdminTests(TransactionTestMixin, TestCase):
 
         self.assertEqual(list(transaction_admin.search_fields), expected_search)
 
-    def test_transaction_admin_search_fields_includes_payee(self):
-        transaction_admin = self.get_transaction_admin()
-
-        self.assertIn("payee", transaction_admin.search_fields)
-
-    def test_transaction_admin_list_display_includes_payee(self):
-        transaction_admin = self.get_transaction_admin()
-
-        self.assertIn("payee", transaction_admin.list_display)
-
     def test_transaction_admin_orders_by_date_and_created_at(self):
         transaction_admin = self.get_transaction_admin()
 
-        expected_ordering = ["-date", "-created_at"]
+        self.assertEqual(list(transaction_admin.ordering), ["-date", "-created_at"])
 
-        self.assertEqual(list(transaction_admin.ordering), expected_ordering)
-
-    def test_transaction_admin_readonly_fields_contains_created_at_and_updated_at(self):
+    def test_transaction_admin_readonly_fields_contains_timestamps_and_approved_at(self):
         transaction_admin = self.get_transaction_admin()
 
-        expected_readonly = ["created_at", "updated_at"]
+        self.assertEqual(
+            list(transaction_admin.readonly_fields),
+            ["created_at", "updated_at", "approved_at"],
+        )
 
-        self.assertEqual(list(transaction_admin.readonly_fields), expected_readonly)
+    def test_transaction_admin_disallows_delete(self):
+        transaction_admin = self.get_transaction_admin()
+
+        self.assertFalse(transaction_admin.has_delete_permission(None))
 
     def test_transaction_admin_save_model_sets_created_by_for_superuser_when_missing(self):
         transaction_model = self.get_transaction_model()
@@ -118,7 +117,6 @@ class TransactionAdminTests(TransactionTestMixin, TestCase):
             target_account=self.cash_account,
             category=self.income_category,
         )
-        self.assertIsNone(getattr(transaction, "created_by", None))
 
         request = RequestFactory().get("/admin/onikisepet/transaction/add/")
         request.user = self.user
@@ -127,3 +125,24 @@ class TransactionAdminTests(TransactionTestMixin, TestCase):
         transaction_admin.save_model(request, transaction, form=None, change=False)
 
         self.assertEqual(transaction.created_by, self.user)
+        self.assertEqual(transaction.approval_status, Transaction.ApprovalStatus.APPROVED)
+
+    def test_transaction_admin_save_model_sets_transfer_to_pending(self):
+        transaction_model = self.get_transaction_model()
+        transaction = transaction_model(
+            date="2026-05-30",
+            transaction_type="transfer",
+            amount=Decimal("100.00"),
+            currency="TRY",
+            source_account=self.cash_account,
+            target_account=self.bank_account,
+        )
+
+        request = RequestFactory().get("/admin/onikisepet/transaction/add/")
+        request.user = self.user
+
+        transaction_admin = self.get_transaction_admin()
+        transaction_admin.save_model(request, transaction, form=None, change=False)
+
+        self.assertEqual(transaction.created_by, self.user)
+        self.assertEqual(transaction.approval_status, Transaction.ApprovalStatus.PENDING)

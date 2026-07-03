@@ -4,88 +4,79 @@ from onikisepet.models import Account
 
 KUT_ACCOUNTS = [
     {
-        "name": "Kasa",
+        "name": "Kasa (Defter)",
         "account_type": Account.AccountType.CASH,
         "account_purpose": Account.AccountPurpose.CASH,
         "currency": Account.Currency.TRY,
+        "opening_balance": Decimal("0"),
     },
     {
-        "name": "Gelir Hesabı (Vahan) - Garanti",
+        "name": "Garanti - Online Bağış",
         "account_type": Account.AccountType.BANK,
         "account_purpose": Account.AccountPurpose.ONLINE_DONATION,
         "currency": Account.Currency.TRY,
+        "opening_balance": Decimal("0"),
     },
     {
-        "name": "Gider Hesabı (Mike, Vahan) - Garanti",
+        "name": "Garanti - Ana Gider",
         "account_type": Account.AccountType.BANK,
         "account_purpose": Account.AccountPurpose.MAIN_EXPENSE,
         "currency": Account.Currency.TRY,
+        "opening_balance": Decimal("0"),
     },
     {
-        "name": "Omega 1 USD",
-        "account_type": Account.AccountType.SAVINGS,
+        "name": "Omega (USD)",
+        "account_type": Account.AccountType.BANK,
         "account_purpose": Account.AccountPurpose.FOREIGN_CURRENCY,
         "currency": Account.Currency.USD,
+        "opening_balance": Decimal("0"),
     },
     {
-        "name": "Omega 2 USD",
-        "account_type": Account.AccountType.SAVINGS,
-        "account_purpose": Account.AccountPurpose.FOREIGN_CURRENCY,
-        "currency": Account.Currency.USD,
-    },
-    {
-        "name": "Omega 3 USD",
-        "account_type": Account.AccountType.SAVINGS,
-        "account_purpose": Account.AccountPurpose.FOREIGN_CURRENCY,
-        "currency": Account.Currency.USD,
-    },
-    {
-        "name": "Merhamet EUR",
-        "account_type": Account.AccountType.SAVINGS,
+        "name": "Merhamet (EUR)",
+        "account_type": Account.AccountType.BANK,
         "account_purpose": Account.AccountPurpose.FOREIGN_CURRENCY,
         "currency": Account.Currency.EUR,
+        "opening_balance": Decimal("0"),
     },
     {
-        "name": "Deprem TL",
+        "name": "Deprem Fonu (TRY)",
         "account_type": Account.AccountType.SAVINGS,
         "account_purpose": Account.AccountPurpose.SAVINGS,
         "currency": Account.Currency.TRY,
+        "opening_balance": Decimal("0"),
     },
     {
-        "name": "Deprem USD",
+        "name": "Deprem Fonu (USD)",
         "account_type": Account.AccountType.SAVINGS,
         "account_purpose": Account.AccountPurpose.FOREIGN_CURRENCY,
         "currency": Account.Currency.USD,
+        "opening_balance": Decimal("0"),
     },
     {
-        "name": "Deprem EUR",
+        "name": "Deprem Fonu (EUR)",
         "account_type": Account.AccountType.SAVINGS,
         "account_purpose": Account.AccountPurpose.FOREIGN_CURRENCY,
         "currency": Account.Currency.EUR,
+        "opening_balance": Decimal("0"),
     },
 ]
 
 
-def seed_kut_accounts(*, opening_balances=None):
-    opening_balances = opening_balances or {}
-    created = []
-    existing = []
+def load_kut_accounts():
+    created_count = 0
 
     for spec in KUT_ACCOUNTS:
-        defaults = {
-            "account_type": spec["account_type"],
-            "account_purpose": spec["account_purpose"],
-            "currency": spec["currency"],
-            "opening_balance": opening_balances.get(spec["name"], Decimal("0")),
-            "is_active": True,
-        }
-        account, was_created = Account.objects.get_or_create(
+        _account, created = Account.objects.get_or_create(
             name=spec["name"],
-            defaults=defaults,
+            defaults={
+                "account_type": spec["account_type"],
+                "account_purpose": spec["account_purpose"],
+                "currency": spec["currency"],
+                "opening_balance": spec["opening_balance"],
+                "is_active": True,
+            },
         )
-        if was_created:
-            created.append(account)
-        else:
-            existing.append(account)
+        if created:
+            created_count += 1
 
-    return created, existing
+    return created_count

@@ -1,0 +1,35 @@
+{% load l10n %}
+{% localize off %}
+<form
+    method="post"
+    action="{% url 'transaction_reject' transaction.pk %}"
+    hx-post="{% url 'transaction_reject' transaction.pk %}"
+    hx-target="closest [data-transaction-row-group]"
+    hx-swap="outerHTML"
+    class="transaction-reject-form"
+>
+    {% csrf_token %}
+    <p class="transaction-reject-form__summary">
+        {{ transaction.date|date:"Y-m-d" }} —
+        {{ transaction.get_transaction_type_display }} —
+        {{ transaction.amount }} {{ transaction.currency }}
+    </p>
+    {{ form.rejection_reason.label_tag }}
+    {{ form.rejection_reason }}
+    {% if form.rejection_reason.errors %}
+        <ul class="form-errors">
+            {% for error in form.rejection_reason.errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <div class="approval-actions">
+        <button type="submit" class="reject-button">Reddet</button>
+        <button
+            type="button"
+            class="btn btn--ghost btn--sm"
+            onclick="(function(){var cell=document.getElementById('transaction-detail-cell-{{ transaction.pk }}');cell.textContent=cell.dataset.defaultDetail;document.getElementById('transaction-detail-{{ transaction.pk }}').setAttribute('hidden','');})()"
+        >İptal</button>
+    </div>
+</form>
+{% endlocalize %}

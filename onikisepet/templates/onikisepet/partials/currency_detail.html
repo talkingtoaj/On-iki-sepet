@@ -1,0 +1,27 @@
+{% load l10n %}
+{% localize off %}
+<div class="htmx-panel">
+    <h3>{{ currency }} — Bu Ay Detay</h3>
+    <p class="htmx-panel__period">
+        {{ month_start|date:"d F Y" }} – {{ month_end|date:"d F Y" }}
+    </p>
+    <ul class="htmx-panel__metrics">
+        <li>Gelir: <strong>{{ summary.total_income|stringformat:".2f" }} {{ currency }}</strong></li>
+        <li>Gider: <strong>{{ summary.total_expenses|stringformat:".2f" }} {{ currency }}</strong></li>
+        <li>Net: <strong>{{ summary.net_financial_status|stringformat:".2f" }} {{ currency }}</strong></li>
+    </ul>
+    {% if accounts %}
+        <h4>{{ currency }} Hesap Bakiyeleri</h4>
+        <ul class="htmx-panel__list">
+            {% for item in accounts %}
+                <li>
+                    <span>{{ item.account.name }}</span>
+                    <span>{{ item.balance|stringformat:".2f" }} {{ currency }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aktif {{ currency }} hesabı bulunmuyor.</p>
+    {% endif %}
+</div>
+{% endlocalize %}

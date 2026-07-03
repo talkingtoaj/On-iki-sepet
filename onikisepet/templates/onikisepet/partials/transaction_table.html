@@ -1,0 +1,31 @@
+{% load l10n %}
+{% localize off %}
+{% if transactions %}
+    <div class="transaction-table-wrapper">
+        <table class="transaction-table">
+            <thead>
+                <tr>
+                    <th scope="col">Tarih</th>
+                    <th scope="col">İşlem Tipi</th>
+                    <th scope="col">Tutar</th>
+                    <th scope="col">Ödeyen/Alıcı</th>
+                    <th scope="col">Kaynak Hesap</th>
+                    <th scope="col">Hedef Hesap</th>
+                    <th scope="col">Kategori</th>
+                    <th scope="col">Açıklama</th>
+                    <th scope="col">Onay</th>
+                    <th scope="col">Fiş</th>
+                    {% if can_create_transactions %}
+                        <th scope="col">İşlem</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            {% for transaction in transactions %}
+                {% include "onikisepet/partials/transaction_row.html" %}
+            {% endfor %}
+        </table>
+    </div>
+{% else %}
+    <p class="empty-state">Henüz işlem bulunamadı.</p>
+{% endif %}
+{% endlocalize %}

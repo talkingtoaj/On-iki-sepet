@@ -25,6 +25,10 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
 
         self.transaction_list_url = reverse("transaction_list")
         self.admin_user = self.create_user("transaction_list_admin", is_superuser=True)
+        self.data_entry_user = self.create_user(
+            "transaction_list_data_entry",
+            group_name="Data Entry",
+        )
         self.viewer_user = self.create_user("transaction_list_viewer", group_name="Viewer")
 
         self.cash_account = self.create_account(
@@ -47,6 +51,9 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
             name="List Rent",
             category_type="expense",
         )
+
+    def _login_data_entry(self):
+        self.client.login(username=self.data_entry_user.username, password=self.password)
 
     def _login_viewer(self):
         self.client.login(username=self.viewer_user.username, password=self.password)
@@ -109,7 +116,7 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
 
     def test_transaction_list_displays_transaction_fields(self):
         self._create_income_transaction()
-        self._login_viewer()
+        self._login_data_entry()
 
         response = self.client.get(self.transaction_list_url)
 
@@ -125,7 +132,7 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
 
     def test_transaction_list_displays_source_and_target_accounts_for_transfer(self):
         self._create_transfer_transaction()
-        self._login_viewer()
+        self._login_data_entry()
 
         response = self.client.get(self.transaction_list_url)
 
@@ -144,7 +151,7 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
             date="2026-06-20",
             description="Newer transaction",
         )
-        self._login_viewer()
+        self._login_data_entry()
 
         response = self.client.get(self.transaction_list_url)
 
@@ -159,7 +166,7 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
         cash_expense = self._create_cash_expense_transaction()
         receipt = self._create_receipt(cash_expense)
         receipt_url = reverse("receipt_download", kwargs={"pk": receipt.pk})
-        self._login_viewer()
+        self._login_data_entry()
 
         response = self.client.get(self.transaction_list_url)
 
@@ -170,13 +177,20 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
     def test_transaction_list_leaves_receipt_cell_empty_without_receipt(self):
         self._create_cash_expense_transaction(description="Receiptless cash expense")
         self._create_income_transaction(description="Income without receipt")
-        self._login_viewer()
+        self._login_data_entry()
 
         response = self.client.get(self.transaction_list_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, reverse("receipt_download", kwargs={"pk": 1}))
         self.assertNotContains(response, "Fiş İndir")
+
+    def test_viewer_cannot_access_transaction_list(self):
+        self._login_viewer()
+
+        response = self.client.get(self.transaction_list_url)
+
+        self.assertEqual(response.status_code, 403)
 
     def test_anonymous_user_is_redirected_to_login(self):
         response = self.client.get(self.transaction_list_url)
@@ -193,7 +207,7 @@ class TransactionListViewTests(TransactionTestMixin, TestCase):
         self._create_receipt(first_expense)
         self._create_transfer_transaction(date="2026-06-02")
         self._create_income_transaction(date="2026-06-03")
-        self._login_viewer()
+        self._login_data_entry()
 
         with CaptureQueriesContext(connection) as single_transaction_queries:
             self.client.get(self.transaction_list_url)

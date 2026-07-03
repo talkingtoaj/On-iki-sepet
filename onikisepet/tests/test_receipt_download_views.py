@@ -97,12 +97,12 @@ class ReceiptDownloadViewTests(TransactionTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_viewer_can_download_receipt(self):
+    def test_viewer_cannot_download_receipt(self):
         self.client.login(username=self.viewer_user.username, password=self.password)
 
         response = self.client.get(self.receipt_download_url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     def test_anonymous_user_is_redirected_to_login(self):
         response = self.client.get(self.receipt_download_url)

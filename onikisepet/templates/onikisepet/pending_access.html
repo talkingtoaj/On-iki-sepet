@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Erişim bekleniyor | KUT Finans</title>
+    <link rel="stylesheet" href="{% static 'onikisepet/app.css' %}">
+</head>
+<body class="login-page">
+    <section class="login-panel">
+        <h1>Erişim henüz atanmadı</h1>
+        <p class="login-subtitle">
+            Hesabınız oluşturuldu ancak henüz bir uygulama rolüne (Data Entry veya Viewer) atanmadınız.
+            Lütfen sistem yöneticinizle iletişime geçin.
+        </p>
+        <form class="logout-form" method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="btn btn--secondary" type="submit">Çıkış yap</button>
+        </form>
+    </section>
+</body>
+</html>

@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
 
-from onikisepet.models import AuditLog
+from onikisepet.models import AuditLog, Transaction
 
 from .helpers import TransactionTestMixin
 
@@ -28,7 +28,8 @@ class AuditLogTests(TransactionTestMixin, TestCase):
             amount=Decimal("100.00"),
             target_account=self.cash,
             category=self.income_category,
-            created_by=self.admin_user,
+            created_by=self.data_entry_user,
+            approval_status=Transaction.ApprovalStatus.PENDING,
         )
 
     def test_transaction_edit_creates_audit_log(self):

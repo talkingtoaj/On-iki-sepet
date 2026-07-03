@@ -7,6 +7,8 @@ from django.urls import reverse
 
 from onikisepet.models import Receipt
 
+from onikisepet import messages as msg
+
 from .helpers import TransactionTestMixin
 
 
@@ -180,7 +182,7 @@ class TransferViewTests(TransactionTestMixin, TestCase):
         self.assertFormError(
             response.context["form"],
             "source_account",
-            "This field is required.",
+            "Bu alan zorunludur.",
         )
         self.assertEqual(self._transaction_model().objects.count(), 0)
 
@@ -196,7 +198,7 @@ class TransferViewTests(TransactionTestMixin, TestCase):
         self.assertFormError(
             response.context["form"],
             "target_account",
-            "Transfer accounts must be different.",
+            msg.TRANSFER_ACCOUNTS_MUST_DIFFER,
         )
         self.assertEqual(self._transaction_model().objects.count(), 0)
 
@@ -212,6 +214,6 @@ class TransferViewTests(TransactionTestMixin, TestCase):
         self.assertFormError(
             response.context["form"],
             "target_account",
-            "Cross-currency transfers are not supported in the MVP.",
+            msg.TRANSFER_CROSS_CURRENCY_NOT_SUPPORTED,
         )
         self.assertEqual(self._transaction_model().objects.count(), 0)

@@ -17,9 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from config.health import health_check
 from config.storage import get_debug_media_urlpatterns
 
 urlpatterns = [
+    path("health/", health_check, name="health_check"),
     path('admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')),
     path("", include("onikisepet.urls")),
 ] + get_debug_media_urlpatterns()

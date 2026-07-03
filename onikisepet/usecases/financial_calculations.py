@@ -154,22 +154,6 @@ def build_currency_summary(transactions):
     }
 
 
-def calculate_transfer_total(transactions):
-    if hasattr(transactions, "filter"):
-        return _aggregate_amount(
-            transactions.filter(transaction_type=Transaction.TransactionType.TRANSFER)
-        )
-
-    return sum(
-        (
-            transaction.amount
-            for transaction in transactions
-            if transaction.transaction_type == Transaction.TransactionType.TRANSFER
-        ),
-        DEFAULT_ZERO,
-    )
-
-
 def calculate_transfer_total_for_currency(transactions, currency):
     if hasattr(transactions, "filter"):
         return _aggregate_amount(
@@ -197,26 +181,70 @@ def build_transfer_summary(transactions):
     }
 
 
+def build_transfer_report(transactions):
+    if hasattr(transactions, "filter"):
+        transfer_queryset = transactions.filter(
+            transaction_type=Transaction.TransactionType.TRANSFER,
+        ).select_related(
+            "source_account",
+            "target_account",
+        ).order_by("-date", "-pk")
+        return [
+            {
+                "date": transaction.date,
+                "amount": transaction.amount,
+                "currency": transaction.currency,
+                "source_account": transaction.source_account,
+                "target_account": transaction.target_account,
+                "description": transaction.description,
+            }
+            for transaction in transfer_queryset
+        ]
+
+    transfers = [
+        transaction
+        for transaction in transactions
+        if transaction.transaction_type == Transaction.TransactionType.TRANSFER
+    ]
+    transfers.sort(key=lambda transaction: (transaction.date, transaction.pk), reverse=True)
+    return [
+        {
+            "date": transaction.date,
+            "amount": transaction.amount,
+            "currency": transaction.currency,
+            "source_account": transaction.source_account,
+            "target_account": transaction.target_account,
+            "description": transaction.description,
+        }
+        for transaction in transfers
+    ]
+
+
 def calculate_account_balance(account):
     opening_balance = account.opening_balance or DEFAULT_ZERO
+    approved = Transaction.ApprovalStatus.APPROVED
     income_total = _aggregate_amount(
         account.target_transactions.filter(
-            transaction_type=Transaction.TransactionType.INCOME
+            approval_status=approved,
+            transaction_type=Transaction.TransactionType.INCOME,
         )
     )
     expense_total = _aggregate_amount(
         account.source_transactions.filter(
-            transaction_type=Transaction.TransactionType.EXPENSE
+            approval_status=approved,
+            transaction_type=Transaction.TransactionType.EXPENSE,
         )
     )
     transfer_in_total = _aggregate_amount(
         account.target_transactions.filter(
-            transaction_type=Transaction.TransactionType.TRANSFER
+            approval_status=approved,
+            transaction_type=Transaction.TransactionType.TRANSFER,
         )
     )
     transfer_out_total = _aggregate_amount(
         account.source_transactions.filter(
-            transaction_type=Transaction.TransactionType.TRANSFER
+            approval_status=approved,
+            transaction_type=Transaction.TransactionType.TRANSFER,
         )
     )
 
@@ -302,7 +330,3 @@ def calculate_account_balance_for_transactions(account, transactions):
         - expense_total
         - transfer_out_total
     )
-
-
-def calculate_total_net_position(accounts):
-    return sum((calculate_account_balance(account) for account in accounts), DEFAULT_ZERO)

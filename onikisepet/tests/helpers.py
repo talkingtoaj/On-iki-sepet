@@ -5,6 +5,9 @@ from typing import Any, cast
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+
+from onikisepet.permissions import APPROVER_GROUP, DATA_ENTRY_GROUP, VIEWER_GROUP
+from onikisepet.usecases.profile_sync import sync_user_profile_from_groups
 from django.db.models import Model
 
 from onikisepet.models import Category
@@ -183,6 +186,86 @@ class AccountTestMixin:
         )
 
 
+class ProfileTestMixin:
+    APP_LABEL = "onikisepet"
+    PROFILE_MODEL_NAME = "Profile"
+    ROLE_VIEWER = "viewer"
+    ROLE_DATA_ENTRY = "data_entry"
+
+    @classmethod
+    def assign_user_to_group(cls, user, group_name):
+        group, _ = Group.objects.get_or_create(name=group_name)
+        user.groups.add(group)
+        return user
+
+    @classmethod
+    def create_data_entry_approver(cls, username):
+        user = TransactionTestMixin.create_user(
+            username,
+            group_name=DATA_ENTRY_GROUP,
+        )
+        cls.assign_user_to_group(user, APPROVER_GROUP)
+        sync_user_profile_from_groups(user)
+        return user
+
+    @classmethod
+    def get_profile_model(cls) -> type[Model]:
+        try:
+            model = apps.get_model(cls.APP_LABEL, cls.PROFILE_MODEL_NAME)
+        except LookupError as exc:
+            raise AssertionError(
+                "Profile model must be implemented as onikisepet.Profile."
+            ) from exc
+
+        if model is None:
+            raise AssertionError(
+                "Profile model must be implemented as onikisepet.Profile."
+            )
+        return cast(type[Model], model)
+
+    @classmethod
+    def get_profile_role_field_name(cls) -> str:
+        field_names = {field.name for field in cls.get_profile_model()._meta.fields}
+        if "role" in field_names:
+            return "role"
+        raise AssertionError("Profile must define a `role` field.")
+
+    @classmethod
+    def build_profile_kwargs(cls, *, user, role=ROLE_VIEWER) -> dict[str, Any]:
+        return {
+            "user": user,
+            cls.get_profile_role_field_name(): role,
+        }
+
+    @classmethod
+    def create_profile(cls, user, *, role=ROLE_VIEWER) -> Model:
+        profile_model = cls.get_profile_model()
+        return cast(
+            Model,
+            profile_model.objects.create(**cls.build_profile_kwargs(user=user, role=role)),
+        )
+
+    @classmethod
+    def create_user_with_profile(
+        cls,
+        username,
+        *,
+        role=ROLE_VIEWER,
+        is_superuser=False,
+    ):
+        user_model = get_user_model()
+        user = user_model.objects.create_user(
+            username=username,
+            email=f"{username}@example.com",
+            password=TransactionTestMixin.password,
+            is_staff=is_superuser,
+            is_superuser=is_superuser,
+        )
+        if not is_superuser:
+            cls.create_profile(user, role=role)
+        return user
+
+
 class TransactionTestMixin:
     password = "StrongTestPass123!"
 
@@ -297,6 +380,7 @@ class TransactionTestMixin:
         category=None,
         description="Test transaction",
         created_by=None,
+        approval_status=None,
     ) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
             "date": date,
@@ -313,6 +397,8 @@ class TransactionTestMixin:
             kwargs["category"] = category
         if created_by is not None:
             kwargs["created_by"] = created_by
+        if approval_status is not None:
+            kwargs["approval_status"] = approval_status
         return kwargs
 
     @classmethod

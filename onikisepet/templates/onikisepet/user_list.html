@@ -1,0 +1,52 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}Kullanıcılar | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <header class="page-header">
+            <p class="eyebrow">Yönetim</p>
+            <h1>Kullanıcılar</h1>
+            <p class="text-muted">Uygulama kullanıcıları ve grup atamaları.</p>
+        </header>
+
+        <div class="page-actions">
+            <a class="btn btn--primary" href="{% url 'user_create' %}">Kullanıcı Oluştur</a>
+        </div>
+
+        {% if users %}
+            <div class="data-table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Kullanıcı adı</th>
+                            <th scope="col">E-posta</th>
+                            <th scope="col">Gruplar</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email|default:"—" }}</td>
+                                <td>
+                                    {% for group in user.groups.all %}
+                                        <span class="badge badge--active">{{ group.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">Atanmadı</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'user_edit' pk=user.pk %}">Düzenle</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">Henüz kullanıcı yok.</p>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -61,7 +61,10 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
         )
         self.viewer_user = self.create_user("nav_viewer", group_name="Viewer")
 
-        self.main_menu_links = {
+        self.viewer_main_menu_links = {
+            "Raporlar": reverse("report_dashboard"),
+        }
+        self.data_entry_main_menu_links = {
             "Raporlar": reverse("report_dashboard"),
             "İşlemler": reverse("transaction_list"),
             "Hesaplar": reverse("account_list"),
@@ -73,13 +76,11 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
             "Banka Gideri": reverse("bank_expense_create"),
             "Online Bağış": reverse("online_donation_income_create"),
             "Transfer": reverse("transfer_create"),
+            "Ekstre Yükle": reverse("import_new"),
         }
         self.setup_create_links = {
             "Kategori Oluştur": reverse("category_create"),
             "Hesap Oluştur": reverse("account_create"),
-        }
-        self.transaction_create_link = {
-            "İşlem Oluştur": reverse("transaction_create"),
         }
 
     def _login(self, user):
@@ -96,12 +97,19 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
             with self.subTest(label=label):
                 self.assertNotContains(response, f'href="{url}"')
 
-    def test_authenticated_users_see_main_menu_links(self):
-        for user in (self.admin_user, self.data_entry_user, self.viewer_user):
-            with self.subTest(user=user.username):
-                self._login(user)
-                response = self.client.get(self.home_url)
-                self._assert_contains_links(response, self.main_menu_links)
+    def test_admin_sees_operational_menu_links(self):
+        self._login(self.admin_user)
+
+        response = self.client.get(self.home_url)
+
+        self._assert_contains_links(response, self.data_entry_main_menu_links)
+
+    def test_data_entry_sees_operational_menu_links(self):
+        self._login(self.data_entry_user)
+
+        response = self.client.get(self.home_url)
+
+        self._assert_contains_links(response, self.data_entry_main_menu_links)
 
     def test_admin_sees_all_create_links(self):
         self._login(self.admin_user)
@@ -110,7 +118,6 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
 
         self._assert_contains_links(response, self.transaction_create_menu_links)
         self._assert_contains_links(response, self.setup_create_links)
-        self._assert_contains_links(response, self.transaction_create_link)
 
     def test_data_entry_sees_transaction_create_links_only(self):
         self._login(self.data_entry_user)
@@ -118,8 +125,19 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
         response = self.client.get(self.home_url)
 
         self._assert_contains_links(response, self.transaction_create_menu_links)
-        self._assert_contains_links(response, self.transaction_create_link)
         self._assert_not_contains_links(response, self.setup_create_links)
+
+    def test_viewer_sees_only_report_menu_link(self):
+        self._login(self.viewer_user)
+
+        response = self.client.get(self.home_url)
+
+        self._assert_contains_links(response, self.viewer_main_menu_links)
+        self._assert_not_contains_links(response, {
+            "İşlemler": reverse("transaction_list"),
+            "Hesaplar": reverse("account_list"),
+            "Kategoriler": reverse("category_list"),
+        })
 
     def test_viewer_does_not_see_create_links(self):
         self._login(self.viewer_user)
@@ -128,4 +146,3 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
 
         self._assert_not_contains_links(response, self.transaction_create_menu_links)
         self._assert_not_contains_links(response, self.setup_create_links)
-        self._assert_not_contains_links(response, self.transaction_create_link)

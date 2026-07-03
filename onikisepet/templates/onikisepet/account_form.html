@@ -1,15 +1,21 @@
 {% extends "onikisepet/base.html" %}
 
-{% block title %}Hesap Oluştur | On İki Sepet{% endblock %}
+{% block title %}Hesap Oluştur | KUT Finans{% endblock %}
 
 {% block content %}
     <section class="content-panel">
-        <h1>Hesap Oluştur</h1>
+        <header class="page-header">
+            <p class="eyebrow">Yönetim</p>
+            <h1>Hesap Oluştur</h1>
+        </header>
 
-        <form method="post">
+        <form class="form" method="post">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button class="button" type="submit">Kaydet</button>
+            {% include "onikisepet/includes/form_fields.html" %}
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Kaydet</button>
+                <a class="btn btn--secondary" href="{% url 'account_list' %}">İptal</a>
+            </div>
         </form>
     </section>
 {% endblock %}

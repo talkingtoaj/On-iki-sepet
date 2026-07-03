@@ -1,0 +1,138 @@
+{% load l10n %}
+{% localize off %}
+{% if is_htmx %}
+<div id="report-range-label" class="selected-range selected-range--inline" hx-swap-oob="innerHTML">
+    {% include "onikisepet/partials/report_range_label.html" %}
+</div>
+{% endif %}
+
+<div class="summary-grid">
+    <section class="summary-card summary-card--TRY">
+        <h2>TRY Özeti</h2>
+        <p class="metric income">Toplam Gelir: {{ currency_summary.TRY.total_income|stringformat:".2f" }} TRY</p>
+        <p class="metric expenses">Toplam Gider: {{ currency_summary.TRY.total_expenses|stringformat:".2f" }} TRY</p>
+        <p class="metric net">Net Durum: {{ currency_summary.TRY.net_financial_status|stringformat:".2f" }} TRY</p>
+    </section>
+
+    <section class="summary-card summary-card--USD">
+        <h2>USD Özeti</h2>
+        <p class="metric income">Toplam Gelir: {{ currency_summary.USD.total_income|stringformat:".2f" }} USD</p>
+        <p class="metric expenses">Toplam Gider: {{ currency_summary.USD.total_expenses|stringformat:".2f" }} USD</p>
+        <p class="metric net">Net Durum: {{ currency_summary.USD.net_financial_status|stringformat:".2f" }} USD</p>
+    </section>
+
+    <section class="summary-card summary-card--EUR">
+        <h2>EUR Özeti</h2>
+        <p class="metric income">Toplam Gelir: {{ currency_summary.EUR.total_income|stringformat:".2f" }} EUR</p>
+        <p class="metric expenses">Toplam Gider: {{ currency_summary.EUR.total_expenses|stringformat:".2f" }} EUR</p>
+        <p class="metric net">Net Durum: {{ currency_summary.EUR.net_financial_status|stringformat:".2f" }} EUR</p>
+    </section>
+</div>
+
+<section class="balances-panel section">
+    <div class="collapsible__header">
+        <h2 id="transfer-panel-title">Transfer Özeti (gelir/gider değildir)</h2>
+        <button
+            type="button"
+            class="btn btn--ghost btn--sm"
+            data-collapsible-toggle
+            aria-expanded="{% if transfer_report %}true{% else %}false{% endif %}"
+            aria-controls="transfer-panel-body"
+            data-label-show="Transferleri göster"
+            data-label-hide="Transferleri gizle"
+        >{% if transfer_report %}Transferleri gizle{% else %}Transferleri göster{% endif %}</button>
+    </div>
+    <div
+        id="transfer-panel-body"
+        class="collapsible__body"
+        aria-labelledby="transfer-panel-title"
+        {% if not transfer_report %}hidden{% endif %}
+    >
+        <p class="metric">
+            <span class="metric-label">TRY Transfer Toplamı</span>
+            <span class="metric-value tabular-nums">{{ transfer_summary.TRY|stringformat:".2f" }} TRY</span>
+        </p>
+        <p class="metric">
+            <span class="metric-label">USD Transfer Toplamı</span>
+            <span class="metric-value tabular-nums">{{ transfer_summary.USD|stringformat:".2f" }} USD</span>
+        </p>
+        <p class="metric">
+            <span class="metric-label">EUR Transfer Toplamı</span>
+            <span class="metric-value tabular-nums">{{ transfer_summary.EUR|stringformat:".2f" }} EUR</span>
+        </p>
+
+        {% if transfer_report %}
+            <div class="data-table-wrapper section--spaced">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Tarih</th>
+                            <th scope="col">Kaynak</th>
+                            <th scope="col">Hedef</th>
+                            <th scope="col" class="data-table__amount">Tutar</th>
+                            <th scope="col">Açıklama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in transfer_report %}
+                            <tr>
+                                <td>{{ item.date|date:"Y-m-d" }}</td>
+                                <td>{{ item.source_account }}</td>
+                                <td>{{ item.target_account }}</td>
+                                <td class="data-table__amount">{{ item.amount|stringformat:".2f" }} {{ item.currency }}</td>
+                                <td>{{ item.description|default:"-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state section--spaced">Seçili dönemde transfer bulunamadı.</p>
+        {% endif %}
+    </div>
+</section>
+
+<div class="category-grid">
+    <section class="category-panel">
+        <h2>Kategoriye Göre Gelir</h2>
+        {% if income_totals_by_category %}
+            <ul class="category-list">
+                {% for item in income_totals_by_category %}
+                    <li class="category-item">{{ item.category.name }}: {{ item.total|stringformat:".2f" }} {{ item.currency }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-state">Gelir kategorisi bulunamadı.</p>
+        {% endif %}
+    </section>
+
+    <section class="category-panel">
+        <h2>Kategoriye Göre Gider</h2>
+        {% if expense_category_bars %}
+            <p class="panel-note">En yüksek 5 gider kalemi</p>
+            <ul class="category-bar-list" aria-label="Gider dağılımı">
+                {% for item in expense_category_bars %}
+                    <li class="category-bar-item">
+                        <div class="category-bar-item__header">
+                            <span class="category-bar-item__name">{{ item.category.name }}</span>
+                            <span class="category-bar-item__amount tabular-nums">{{ item.total|stringformat:".2f" }} {{ item.currency }}</span>
+                        </div>
+                        <div class="category-bar" role="presentation">
+                            <div class="category-bar__fill" style="--bar-width: {{ item.bar_percent }}%;"></div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if expense_totals_by_category %}
+            <ul class="category-list{% if expense_category_bars %} category-list--after-bars{% endif %}">
+                {% for item in expense_totals_by_category %}
+                    <li class="category-item">{{ item.category.name }}: {{ item.total|stringformat:".2f" }} {{ item.currency }}</li>
+                {% endfor %}
+            </ul>
+        {% elif not expense_category_bars %}
+            <p class="empty-state">Gider kategorisi bulunamadı.</p>
+        {% endif %}
+    </section>
+</div>
+{% endlocalize %}

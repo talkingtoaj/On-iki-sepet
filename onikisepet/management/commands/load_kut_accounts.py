@@ -1,22 +1,18 @@
 from django.core.management.base import BaseCommand
 
-from onikisepet.kut_accounts import seed_kut_accounts
+from onikisepet.kut_accounts import KUT_ACCOUNTS, load_kut_accounts
 
 
 class Command(BaseCommand):
-    help = "KUT Kilisesi hesap yapısını veritabanına yükler."
+    help = "KUT kilisesi için varsayılan hesapları oluşturur."
 
     def handle(self, *args, **options):
-        created, existing = seed_kut_accounts()
+        created_count = load_kut_accounts()
+        existing_count = len(KUT_ACCOUNTS) - created_count
 
-        for account in created:
-            self.stdout.write(self.style.SUCCESS(f"Oluşturuldu: {account.name}"))
-
-        for account in existing:
-            self.stdout.write(f"Zaten var: {account.name}")
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Tamamlandı. {len(created)} yeni, {len(existing)} mevcut hesap."
+        if created_count:
+            self.stdout.write(
+                self.style.SUCCESS(f"Oluşturulan hesap sayısı: {created_count}")
             )
-        )
+        if existing_count:
+            self.stdout.write(f"Zaten mevcut hesap sayısı: {existing_count}")

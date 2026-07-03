@@ -1,3 +1,4 @@
+from onikisepet import messages as msg
 from onikisepet.models import Account, Transaction
 
 
@@ -33,22 +34,14 @@ def validate_account_purpose_for_transaction(transaction, errors):
 
     if transaction_type == Transaction.TransactionType.INCOME:
         if target is not None and target.account_purpose == Account.AccountPurpose.MAIN_EXPENSE:
-            errors["target_account"] = (
-                "Gelir işlemleri gider hesabına kaydedilemez."
-            )
-        if target is not None and target.account_purpose == Account.AccountPurpose.ONLINE_DONATION:
-            pass
+            errors["target_account"] = msg.INCOME_TO_EXPENSE_ACCOUNT_FORBIDDEN
         return
 
     if transaction_type == Transaction.TransactionType.EXPENSE:
         if source is not None and source.account_purpose == Account.AccountPurpose.ONLINE_DONATION:
-            errors["source_account"] = (
-                "Online bağış hesabından gider yapılamaz."
-            )
+            errors["source_account"] = msg.EXPENSE_FROM_ONLINE_DONATION_FORBIDDEN
         return
 
     if transaction_type == Transaction.TransactionType.TRANSFER:
         if target is not None and target.account_purpose == Account.AccountPurpose.ONLINE_DONATION:
-            errors["target_account"] = (
-                "Online bağış hesabına transfer yapılamaz; gelir olarak kaydedin."
-            )
+            errors["target_account"] = msg.TRANSFER_TO_ONLINE_DONATION_FORBIDDEN

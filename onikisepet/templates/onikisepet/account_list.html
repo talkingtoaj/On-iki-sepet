@@ -1,19 +1,65 @@
 {% extends "onikisepet/base.html" %}
+{% load l10n %}
 
-{% block title %}Hesaplar | On İki Sepet{% endblock %}
+{% block title %}Hesaplar | KUT Finans{% endblock %}
 
 {% block content %}
-    <section class="content-panel">
-        <h1>Hesaplar</h1>
+{% localize off %}
+    <div class="page-hero page-hero--single section">
+        {% include "onikisepet/partials/page_hero_panel.html" with eyebrow="Yönetim" title="Hesaplar" subtitle="Güncel bakiyeler tüm onaylı işlemlere göre hesaplanır." %}
+    </div>
 
-        {% if accounts %}
-            <ul>
-                {% for account in accounts %}
-                    <li>{{ account.name }}</li>
-                {% endfor %}
-            </ul>
+    <section class="content-panel content-panel--compact">
+        {% if can_manage_accounts %}
+            <div class="page-actions">
+                <a class="btn btn--primary" href="{% url 'account_create' %}">Hesap Oluştur</a>
+            </div>
+        {% endif %}
+
+        {% if account_balances %}
+            <div class="data-table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Hesap</th>
+                            <th scope="col">Tür</th>
+                            <th scope="col">Para birimi</th>
+                            <th scope="col">Açılış bakiyesi</th>
+                            <th scope="col" class="data-table__amount">Güncel bakiye</th>
+                            <th scope="col">Durum</th>
+                            {% if can_request_account_changes %}
+                                <th scope="col">İşlem</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in account_balances %}
+                            <tr>
+                                <td>{{ item.account.name }}</td>
+                                <td>{{ item.account.get_account_type_display }}</td>
+                                <td>{{ item.account.currency }}</td>
+                                <td class="tabular-nums">{{ item.account.opening_balance|stringformat:".2f" }} {{ item.account.currency }}</td>
+                                <td class="data-table__amount">{{ item.balance|stringformat:".2f" }} {{ item.account.currency }}</td>
+                                <td>
+                                    {% if item.account.is_active %}
+                                        <span class="badge badge--active">Aktif</span>
+                                    {% else %}
+                                        <span class="badge badge--inactive">Pasif</span>
+                                    {% endif %}
+                                </td>
+                                {% if can_request_account_changes %}
+                                    <td>
+                                        <a href="{% url 'account_change_request' item.account.pk %}">Ad değişikliği talep et</a>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p>No accounts found.</p>
+            <p class="empty-state">Henüz hesap bulunamadı.</p>
         {% endif %}
     </section>
+{% endlocalize %}
 {% endblock %}

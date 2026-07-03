@@ -5,6 +5,28 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from onikisepet import messages as msg
+
+
+class Profile(models.Model):
+    class Role(models.TextChoices):
+        VIEWER = "viewer", "Viewer"
+        DATA_ENTRY = "data_entry", "Data Entry"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile",
+    )
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.VIEWER,
+    )
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()}"
+
 
 class Category(models.Model):
     class CategoryType(models.TextChoices):
@@ -68,6 +90,68 @@ class Account(models.Model):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        super().clean()
+        if self.pk is None:
+            return
+
+        original_balance = (
+            Account.objects.filter(pk=self.pk)
+            .values_list("opening_balance", flat=True)
+            .first()
+        )
+        if (
+            original_balance is not None
+            and self.opening_balance != original_balance
+        ):
+            raise ValidationError(
+                {"opening_balance": msg.OPENING_BALANCE_IMMUTABLE},
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class AccountChangeRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        related_name="change_requests",
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="account_change_requests",
+    )
+    proposed_name = models.CharField(max_length=100)
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="approved_account_change_requests",
+        null=True,
+        blank=True,
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.account.name} → {self.proposed_name} ({self.status})"
+
 
 class Transaction(models.Model):
     class TransactionType(models.TextChoices):
@@ -112,6 +196,26 @@ class Transaction(models.Model):
         blank=True,
     )
     description = models.TextField(blank=True)
+
+    class ApprovalStatus(models.TextChoices):
+        PENDING = "pending", "Onay bekliyor"
+        APPROVED = "approved", "Onaylandı"
+        REJECTED = "rejected", "Reddedildi"
+
+    approval_status = models.CharField(
+        max_length=10,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.APPROVED,
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="approved_transactions",
+        null=True,
+        blank=True,
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -138,7 +242,7 @@ class Transaction(models.Model):
         errors = {}
 
         if self.amount is not None and self.amount <= Decimal("0"):
-            errors["amount"] = "Amount must be greater than 0."
+            errors["amount"] = msg.AMOUNT_MUST_BE_POSITIVE
 
         if self.transaction_type == self.TransactionType.INCOME:
             self._validate_income(errors)
@@ -178,42 +282,45 @@ class Transaction(models.Model):
 
     def _validate_income(self, errors):
         if self.target_account is None:
-            errors["target_account"] = "Income transactions require a target account."
+            errors["target_account"] = msg.INCOME_REQUIRES_TARGET_ACCOUNT
         if self.category is None:
-            errors["category"] = "Income transactions require an income category."
+            errors["category"] = msg.INCOME_REQUIRES_INCOME_CATEGORY
         elif self.category.category_type != Category.CategoryType.INCOME:
-            errors["category"] = "Income transactions require an income category."
+            errors["category"] = msg.INCOME_REQUIRES_INCOME_CATEGORY
 
     def _validate_expense(self, errors):
         if self.source_account is None:
-            errors["source_account"] = "Expense transactions require a source account."
+            errors["source_account"] = msg.EXPENSE_REQUIRES_SOURCE_ACCOUNT
         if self.category is None:
-            errors["category"] = "Expense transactions require an expense category."
+            errors["category"] = msg.EXPENSE_REQUIRES_EXPENSE_CATEGORY
         elif self.category.category_type != Category.CategoryType.EXPENSE:
-            errors["category"] = "Expense transactions require an expense category."
+            errors["category"] = msg.EXPENSE_REQUIRES_EXPENSE_CATEGORY
 
     def _validate_transfer(self, errors):
         if self.source_account is None:
-            errors["source_account"] = "Transfer transactions require a source account."
+            errors["source_account"] = msg.TRANSFER_REQUIRES_SOURCE_ACCOUNT
         if self.target_account is None:
-            errors["target_account"] = "Transfer transactions require a target account."
+            errors["target_account"] = msg.TRANSFER_REQUIRES_TARGET_ACCOUNT
         if (
             self.source_account is not None
             and self.target_account is not None
             and self.source_account == self.target_account
         ):
-            errors["target_account"] = "Transfer accounts must be different."
+            errors["target_account"] = msg.TRANSFER_ACCOUNTS_MUST_DIFFER
         if (
             self.source_account is not None
             and self.target_account is not None
             and self.source_account.currency != self.target_account.currency
         ):
-            errors["target_account"] = (
-                "Cross-currency transfers are not supported in the MVP."
-            )
+            errors["target_account"] = msg.TRANSFER_CROSS_CURRENCY_NOT_SUPPORTED
 
 
 class Receipt(models.Model):
+    class FileType(models.TextChoices):
+        PDF = "pdf", "PDF"
+        JPG = "jpg", "JPG"
+        PNG = "png", "PNG"
+
     transaction = models.ForeignKey(
         Transaction,
         on_delete=models.CASCADE,
@@ -221,6 +328,10 @@ class Receipt(models.Model):
     )
     file = models.FileField(upload_to="receipts/")
     original_filename = models.CharField(max_length=255)
+    file_type = models.CharField(
+        max_length=10,
+        choices=FileType.choices,
+    )
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -229,42 +340,141 @@ class Receipt(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        payee = self.transaction.payee
+        return self.original_filename
 
-        if payee:
-            return f"Receipt for {payee} - {self.original_filename}"
+    def save(self, *args, **kwargs):
+        if self.original_filename:
+            from onikisepet.validators import derive_receipt_file_type
 
-        return f"Receipt - {self.original_filename}"
+            self.file_type = derive_receipt_file_type(self.original_filename)
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()
+        errors = {}
 
-        transaction = getattr(self, "transaction", None)
-        if transaction is None:
-            return
+        if self.transaction_id is None:
+            errors["transaction"] = msg.RECEIPT_TRANSACTION_REQUIRED
+        else:
+            transaction = self.transaction
+            if transaction.transaction_type != Transaction.TransactionType.EXPENSE:
+                errors["transaction"] = msg.RECEIPTS_EXPENSE_ONLY
+            elif transaction.source_account is None or (
+                transaction.source_account.account_type
+                not in (Account.AccountType.CASH, Account.AccountType.BANK)
+            ):
+                errors["transaction"] = msg.RECEIPTS_EXPENSE_ACCOUNT_NOT_SUPPORTED
 
-        if transaction.transaction_type != Transaction.TransactionType.EXPENSE:
-            raise ValidationError(
-                {"transaction": "Receipt must belong to an expense transaction."}
-            )
+        if errors:
+            raise ValidationError(errors)
 
-        if (
-            transaction.source_account is None
-            or transaction.source_account.account_type != Account.AccountType.CASH
-        ):
-            raise ValidationError(
-                {"transaction": "Receipt must belong to a cash expense transaction."}
-            )
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        return super().save(*args, **kwargs)
+class BankStatementImport(models.Model):
+    class Status(models.TextChoices):
+        PREVIEW = "preview", "Preview"
+        CONFIRMED = "confirmed", "Confirmed"
+
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="bank_statement_imports",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    original_filename = models.CharField(max_length=255)
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.PREVIEW,
+    )
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return self.original_filename
+
+
+class BankStatementRow(models.Model):
+    bank_statement_import = models.ForeignKey(
+        BankStatementImport,
+        on_delete=models.CASCADE,
+        related_name="rows",
+    )
+    row_number = models.PositiveIntegerField()
+    date = models.DateField(null=True, blank=True)
+    description = models.TextField(blank=True)
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    currency = models.CharField(
+        max_length=3,
+        choices=Account.Currency.choices,
+        blank=True,
+    )
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        related_name="bank_statement_rows",
+        null=True,
+        blank=True,
+    )
+    transaction_type = models.CharField(
+        max_length=10,
+        choices=Transaction.TransactionType.choices,
+        blank=True,
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="bank_statement_rows",
+        null=True,
+        blank=True,
+    )
+    target_account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        related_name="bank_statement_target_rows",
+        null=True,
+        blank=True,
+    )
+    payee = models.CharField(max_length=150, blank=True)
+    is_skipped = models.BooleanField(default=False)
+    parse_error = models.TextField(blank=True)
+    transaction = models.ForeignKey(
+        Transaction,
+        on_delete=models.SET_NULL,
+        related_name="bank_statement_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["row_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bank_statement_import", "row_number"],
+                name="unique_bank_statement_row_number",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Row {self.row_number} - {self.description or 'No description'}"
+
+    @property
+    def is_parse_valid(self):
+        return not self.parse_error
 
 
 class AuditLog(models.Model):
     class Action(models.TextChoices):
         CREATE = "create", "Create"
         UPDATE = "update", "Update"
+        APPROVE = "approve", "Approve"
+        REJECT = "reject", "Reject"
 
     content_type = models.CharField(max_length=50)
     object_id = models.PositiveIntegerField()

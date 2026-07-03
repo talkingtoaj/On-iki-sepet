@@ -1,0 +1,21 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}Hesap Değişikliği Reddet | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <h1>Hesap değişikliğini reddet</h1>
+        <p>
+            {{ change_request.account.name }} → {{ change_request.proposed_name }}
+        </p>
+
+        <form class="form" method="post">
+            {% csrf_token %}
+            {% include "onikisepet/includes/form_fields.html" %}
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Reddet</button>
+                <a class="btn btn--secondary" href="{% url 'account_change_request_list' %}">İptal</a>
+            </div>
+        </form>
+    </section>
+{% endblock %}

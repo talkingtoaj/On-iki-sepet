@@ -1,140 +1,64 @@
 {% extends "onikisepet/base.html" %}
+{% load static l10n %}
 
-{% block title %}İşlemler | On İki Sepet{% endblock %}
-
-{% block extra_css %}
-    <style>
-        .transaction-table-wrapper {
-            overflow-x: auto;
-        }
-
-        .transaction-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: "Trebuchet MS", Verdana, sans-serif;
-            font-size: 0.9rem;
-        }
-
-        .transaction-table th,
-        .transaction-table td {
-            border-bottom: 1px solid rgba(217, 207, 188, 0.85);
-            padding: 12px 10px;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .transaction-table th {
-            color: var(--muted);
-            font-size: 0.76rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .transaction-table tbody tr:last-child td {
-            border-bottom: 0;
-        }
-
-        .amount-cell {
-            font-weight: 800;
-            white-space: nowrap;
-        }
-
-        .receipt-link {
-            color: var(--panel-strong);
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        .empty-cell {
-            color: var(--muted);
-        }
-    </style>
-{% endblock %}
+{% block title %}İşlemler | KUT Finans{% endblock %}
 
 {% block content %}
-    <section class="content-panel">
-        <h1>İşlemler</h1>
+{% localize off %}
+    <div class="page-hero page-hero--single section">
+        {% include "onikisepet/partials/page_hero_panel.html" with eyebrow="Operasyon" title="İşlemler" subtitle="Onay durumuna göre filtreleyin veya metin araması ile kayıtları bulun." %}
+    </div>
 
-        {% if transactions %}
-            <div class="transaction-table-wrapper">
-                <table class="transaction-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Tarih</th>
-                            <th scope="col">İşlem Tipi</th>
-                            <th scope="col">Tutar</th>
-                            <th scope="col">Ödeyen/Alıcı</th>
-                            <th scope="col">Kaynak Hesap</th>
-                            <th scope="col">Hedef Hesap</th>
-                            <th scope="col">Kategori</th>
-                            <th scope="col">Açıklama</th>
-                            <th scope="col">Fiş</th>
-                            {% if can_create_transactions %}
-                                <th scope="col">İşlem</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for transaction in transactions %}
-                            <tr>
-                                <td>{{ transaction.date|date:"Y-m-d" }}</td>
-                                <td>{{ transaction.get_transaction_type_display }}</td>
-                                <td class="amount-cell">{{ transaction.amount|floatformat:2 }} {{ transaction.currency }}</td>
-                                <td>
-                                    {% if transaction.payee %}
-                                        {{ transaction.payee }}
-                                    {% else %}
-                                        <span class="empty-cell">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if transaction.source_account %}
-                                        {{ transaction.source_account.name }}
-                                    {% else %}
-                                        <span class="empty-cell">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if transaction.target_account %}
-                                        {{ transaction.target_account.name }}
-                                    {% else %}
-                                        <span class="empty-cell">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if transaction.category %}
-                                        {{ transaction.category.name }}
-                                    {% else %}
-                                        <span class="empty-cell">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if transaction.description %}
-                                        {{ transaction.description }}
-                                    {% else %}
-                                        <span class="empty-cell">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% for receipt in transaction.receipts.all %}
-                                        <a class="receipt-link" href="{% url 'receipt_download' receipt.pk %}">Fiş İndir</a>
-                                    {% empty %}
-                                        <span class="empty-cell">—</span>
-                                    {% endfor %}
-                                </td>
-                                {% if can_create_transactions %}
-                                    <td>
-                                        <a class="receipt-link" href="{% url 'transaction_edit' transaction.pk %}">Düzenle</a>
-                                    </td>
-                                {% endif %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p>Henüz işlem bulunamadı.</p>
-        {% endif %}
+    <section class="content-panel content-panel--compact">
+        <div class="filter-bar" aria-label="Onay durumu filtresi" data-transaction-filter-bar>
+            <span class="filter-bar__label">Durum</span>
+            <button
+                type="button"
+                class="filter-btn{% if not status_filter %} filter-btn--active{% endif %}"
+                hx-get="{% url 'htmx_transaction_list' %}"
+                hx-target="#transaction-table"
+                hx-swap="innerHTML"
+                hx-push-url="{% url 'transaction_list' %}"
+                hx-indicator="#transaction-table-loading"
+            >Tümü</button>
+            <button
+                type="button"
+                class="filter-btn{% if status_filter == 'pending' %} filter-btn--active{% endif %}"
+                hx-get="{% url 'htmx_transaction_list' %}?status=pending"
+                hx-target="#transaction-table"
+                hx-swap="innerHTML"
+                hx-push-url="{% url 'transaction_list' %}?status=pending"
+                hx-indicator="#transaction-table-loading"
+            >Bekleyen</button>
+            <button
+                type="button"
+                class="filter-btn{% if status_filter == 'approved' %} filter-btn--active{% endif %}"
+                hx-get="{% url 'htmx_transaction_list' %}?status=approved"
+                hx-target="#transaction-table"
+                hx-swap="innerHTML"
+                hx-push-url="{% url 'transaction_list' %}?status=approved"
+                hx-indicator="#transaction-table-loading"
+            >Onaylı</button>
+        </div>
+
+        <label class="sr-only" for="transaction-search">İşlem ara</label>
+        <input
+            type="search"
+            id="transaction-search"
+            class="transaction-search"
+            placeholder="Tarih, tutar, kategori veya açıklama ile ara…"
+            autocomplete="off"
+        >
+
+        <p id="transaction-table-loading" class="htmx-indicator" aria-live="polite">Yükleniyor…</p>
+
+        <div id="transaction-table">
+            {% include "onikisepet/partials/transaction_table.html" %}
+        </div>
     </section>
+{% endlocalize %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'onikisepet/js/transaction_list.js' %}"></script>
 {% endblock %}

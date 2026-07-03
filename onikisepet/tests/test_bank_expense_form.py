@@ -201,7 +201,8 @@ class BankExpenseFormTests(TransactionTestMixin, TestCase):
         form = self.form_class(data=self.build_form_data())
 
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertNotIn("receipt_file", form.fields)
+        self.assertIn("receipt_file", form.fields)
+        self.assertFalse(form.fields["receipt_file"].required)
 
     def test_form_does_not_expose_transaction_type(self):
         form = self.form_class()

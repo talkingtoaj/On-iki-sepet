@@ -138,6 +138,17 @@ class CashExpenseViewTests(TransactionTestMixin, TestCase):
         receipt = Receipt.objects.get()
         self.assertEqual(receipt.original_filename, "migros-bill.jpg")
 
+    def test_cash_expense_create_sets_receipt_file_type(self):
+        self.client.login(username=self.admin_user.username, password=self.password)
+
+        self.client.post(
+            self.cash_expense_create_url,
+            data=self._valid_payload(receipt_name="migros-bill.pdf"),
+        )
+
+        receipt = Receipt.objects.get()
+        self.assertEqual(receipt.file_type, "pdf")
+
     def test_cash_expense_create_uses_cash_account_currency(self):
         self.client.login(username=self.admin_user.username, password=self.password)
 
@@ -164,6 +175,6 @@ class CashExpenseViewTests(TransactionTestMixin, TestCase):
         response = self.client.post(self.cash_expense_create_url, data=payload)
 
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response.context["form"], "receipt_file", "This field is required.")
+        self.assertFormError(response.context["form"], "receipt_file", "Bu alan zorunludur.")
         self.assertEqual(self._transaction_model().objects.count(), 0)
         self.assertEqual(Receipt.objects.count(), 0)

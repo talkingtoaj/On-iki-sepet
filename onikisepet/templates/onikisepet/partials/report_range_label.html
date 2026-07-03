@@ -1,0 +1,13 @@
+{% if active_period_label %}
+    <span>Seçili: <strong>{{ active_period_label }}</strong></span>
+{% elif start_date or end_date %}
+    {% if start_date and end_date %}
+        <span>Özel: <strong>{{ start_date|date:"d.m.Y" }} – {{ end_date|date:"d.m.Y" }}</strong></span>
+    {% elif start_date %}
+        <span>Başlangıç: <strong>{{ start_date|date:"d.m.Y" }}</strong></span>
+    {% else %}
+        <span>Bitiş: <strong>{{ end_date|date:"d.m.Y" }}</strong></span>
+    {% endif %}
+{% else %}
+    <span>Tüm tarihler</span>
+{% endif %}

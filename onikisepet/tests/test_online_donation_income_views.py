@@ -192,6 +192,6 @@ class OnlineDonationIncomeViewTests(TransactionTestMixin, TestCase):
         self.assertFormError(
             response.context["form"],
             "online_donation_account",
-            "This field is required.",
+            "Bu alan zorunludur.",
         )
         self.assertEqual(self._transaction_model().objects.count(), 0)

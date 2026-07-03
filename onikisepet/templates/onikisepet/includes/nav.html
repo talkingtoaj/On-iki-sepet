@@ -1,0 +1,106 @@
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <p class="brand"><a href="{% url 'home' %}">KUT Finans</a></p>
+            <nav class="main-nav" aria-label="Ana menü">
+                <a
+                    class="nav-link{% if current_url_name == 'report_dashboard' %} nav-link--active{% endif %}"
+                    href="{% url 'report_dashboard' %}"
+                    {% if current_url_name == 'report_dashboard' %}aria-current="page"{% endif %}
+                >Raporlar</a>
+                {% if can_view_transaction_list %}
+                    <a
+                        class="nav-link{% if current_url_name == 'transaction_list' %} nav-link--active{% endif %}"
+                        href="{% url 'transaction_list' %}"
+                        {% if current_url_name == 'transaction_list' and not request.GET.status %}aria-current="page"{% endif %}
+                    >İşlemler</a>
+                {% endif %}
+                {% if can_approve_transactions and pending_approval_count %}
+                    <a
+                        class="nav-link{% if current_url_name == 'transaction_list' and request.GET.status == 'pending' %} nav-link--active{% endif %}"
+                        href="{% url 'transaction_list' %}?status=pending"
+                    >
+                        Onay Bekleyen
+                        <span class="nav-badge">{{ pending_approval_count }}</span>
+                    </a>
+                {% endif %}
+                {% if can_approve_transactions and pending_account_change_count %}
+                    <a
+                        class="nav-link{% if current_url_name == 'account_change_request_list' %} nav-link--active{% endif %}"
+                        href="{% url 'account_change_request_list' %}"
+                        {% if current_url_name == 'account_change_request_list' %}aria-current="page"{% endif %}
+                    >
+                        Hesap Değişiklikleri
+                        <span class="nav-badge">{{ pending_account_change_count }}</span>
+                    </a>
+                {% endif %}
+                {% if can_approve_transactions and pending_import_count %}
+                    <a
+                        class="nav-link{% if current_url_name == 'import_list' %} nav-link--active{% endif %}"
+                        href="{% url 'import_list' %}"
+                        {% if current_url_name == 'import_list' %}aria-current="page"{% endif %}
+                    >
+                        Onay Bekleyen Ekstreler
+                        <span class="nav-badge">{{ pending_import_count }}</span>
+                    </a>
+                {% endif %}
+                {% if can_view_operational_pages %}
+                    <a
+                        class="nav-link{% if current_url_name == 'account_list' or current_url_name == 'account_create' or current_url_name == 'account_change_request' %} nav-link--active{% endif %}"
+                        href="{% url 'account_list' %}"
+                        {% if current_url_name == 'account_list' %}aria-current="page"{% endif %}
+                    >Hesaplar</a>
+                    <a
+                        class="nav-link{% if current_url_name == 'category_list' or current_url_name == 'category_create' %} nav-link--active{% endif %}"
+                        href="{% url 'category_list' %}"
+                        {% if current_url_name == 'category_list' %}aria-current="page"{% endif %}
+                    >Kategoriler</a>
+                {% endif %}
+                {% if can_manage_users %}
+                    <a
+                        class="nav-link{% if current_url_name == 'user_list' or current_url_name == 'user_create' or current_url_name == 'user_edit' %} nav-link--active{% endif %}"
+                        href="{% url 'user_list' %}"
+                        {% if current_url_name == 'user_list' %}aria-current="page"{% endif %}
+                    >Kullanıcılar</a>
+                {% endif %}
+                <div class="nav-utilities">
+                    <form class="logout-form" method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button class="nav-link" type="submit">Çıkış</button>
+                    </form>
+                </div>
+            </nav>
+        </div>
+
+        {% if can_create_transactions or can_manage_categories or can_manage_accounts %}
+            <nav class="nav-secondary" aria-label="Kayıt ve yönetim">
+                {% if can_create_transactions %}
+                    <details class="nav-dropdown">
+                        <summary>Kayıt</summary>
+                        <ul class="nav-dropdown-menu">
+                            <li><a href="{% url 'cash_income_create' %}">Nakit Gelir</a></li>
+                            <li><a href="{% url 'cash_expense_create' %}">Nakit Gider</a></li>
+                            <li><a href="{% url 'bank_expense_create' %}">Banka Gideri</a></li>
+                            <li><a href="{% url 'online_donation_income_create' %}">Online Bağış</a></li>
+                            <li><a href="{% url 'transfer_create' %}">Transfer</a></li>
+                            <li><a href="{% url 'import_new' %}">Ekstre Yükle</a></li>
+                        </ul>
+                    </details>
+                {% endif %}
+                {% if can_manage_categories or can_manage_accounts %}
+                    <details class="nav-dropdown">
+                        <summary>Yönetim</summary>
+                        <ul class="nav-dropdown-menu">
+                            {% if can_manage_categories %}
+                                <li><a href="{% url 'category_create' %}">Kategori Oluştur</a></li>
+                            {% endif %}
+                            {% if can_manage_accounts %}
+                                <li><a href="{% url 'account_create' %}">Hesap Oluştur</a></li>
+                            {% endif %}
+                        </ul>
+                    </details>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+</header>

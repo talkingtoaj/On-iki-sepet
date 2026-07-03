@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
 from django.shortcuts import resolve_url
 from django.test import TestCase
@@ -39,8 +40,15 @@ class BankExpenseViewTests(TransactionTestMixin, TestCase):
             category_type="expense",
         )
 
-    def _valid_payload(self, *, bank_account=None):
-        return {
+    def _uploaded_file(self, name="dekont.pdf"):
+        return SimpleUploadedFile(
+            name,
+            b"fake dekont content",
+            content_type="application/pdf",
+        )
+
+    def _valid_payload(self, *, bank_account=None, receipt_name=None):
+        payload = {
             "date": "2026-06-09",
             "payee": "Internet Provider",
             "amount": "325.75",
@@ -48,6 +56,9 @@ class BankExpenseViewTests(TransactionTestMixin, TestCase):
             "category": self.expense_category.pk,
             "description": "Monthly internet bill paid by EFT",
         }
+        if receipt_name is not None:
+            payload["receipt_file"] = self._uploaded_file(receipt_name)
+        return payload
 
     def _transaction_model(self):
         return self.get_transaction_model()
@@ -125,13 +136,26 @@ class BankExpenseViewTests(TransactionTestMixin, TestCase):
         transaction = self._transaction_model().objects.get()
         self.assertEqual(transaction.currency, "USD")
 
-    def test_bank_expense_create_does_not_create_receipt(self):
+    def test_bank_expense_create_does_not_create_receipt_without_file(self):
         self.client.login(username=self.admin_user.username, password=self.password)
 
         self.client.post(self.bank_expense_create_url, data=self._valid_payload())
 
         self.assertEqual(self._transaction_model().objects.count(), 1)
         self.assertEqual(Receipt.objects.count(), 0)
+
+    def test_bank_expense_create_attaches_pdf_dekont(self):
+        self.client.login(username=self.admin_user.username, password=self.password)
+
+        self.client.post(
+            self.bank_expense_create_url,
+            data=self._valid_payload(receipt_name="garanti-dekont.pdf"),
+        )
+
+        receipt = Receipt.objects.get()
+        self.assertEqual(receipt.original_filename, "garanti-dekont.pdf")
+        self.assertEqual(receipt.file_type, "pdf")
+        self.assertEqual(receipt.uploaded_by, self.admin_user)
 
     def test_successful_bank_expense_create_redirects_to_transaction_list(self):
         self.client.login(username=self.admin_user.username, password=self.password)
@@ -151,5 +175,5 @@ class BankExpenseViewTests(TransactionTestMixin, TestCase):
         response = self.client.post(self.bank_expense_create_url, data=payload)
 
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response.context["form"], "bank_account", "This field is required.")
+        self.assertFormError(response.context["form"], "bank_account", "Bu alan zorunludur.")
         self.assertEqual(self._transaction_model().objects.count(), 0)

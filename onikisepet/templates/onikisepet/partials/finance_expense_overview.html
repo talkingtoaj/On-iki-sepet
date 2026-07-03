@@ -1,0 +1,22 @@
+{% load l10n %}
+{% localize off %}
+<div class="currency-panel">
+    <h3>Bu Ay Giderleri</h3>
+    <p class="currency-panel__period">
+        {{ month_start|date:"d F Y" }} – {{ month_end|date:"d F Y" }}
+    </p>
+    {% if top_expenses %}
+        <h4>En Büyük Gider Kalemleri</h4>
+        <ul class="currency-panel__list">
+            {% for item in top_expenses %}
+                <li>
+                    <span>{{ item.category.name }}</span>
+                    <span>{{ item.total|stringformat:".2f" }} {{ item.currency }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Bu ay henüz gider kaydı yok.</p>
+    {% endif %}
+</div>
+{% endlocalize %}

@@ -1,0 +1,122 @@
+{% extends "onikisepet/base.html" %}
+{% load l10n %}
+
+{% block title %}Ekstre Önizleme | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <header class="page-header">
+            <p class="eyebrow">Banka ekstresi</p>
+            <h1>Önizleme</h1>
+        </header>
+        <p>Dosya: <strong>{{ bank_import.original_filename }}</strong></p>
+
+        {% if read_only %}
+            <p class="text-muted">Salt okunur önizleme — sınıflandırma yalnızca yükleyen tarafından düzenlenebilir.</p>
+            {% localize off %}
+
+            <div class="import-table-wrapper section">
+                <table class="import-table data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tarih</th>
+                            <th>Açıklama</th>
+                            <th>Tutar</th>
+                            <th>Para birimi</th>
+                            <th>Hesap</th>
+                            <th>Tür</th>
+                            <th>Kategori</th>
+                            <th>Hedef hesap</th>
+                            <th>Ödeyen/Alıcı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td>{{ row.row_number }}</td>
+                                <td>{{ row.date|default:"-" }}</td>
+                                <td>{{ row.description|default:"-" }}</td>
+                                <td>{{ row.amount|default:"-" }}</td>
+                                <td>{{ row.currency|default:"-" }}</td>
+                                <td>{{ row.account|default:"-" }}</td>
+                                <td>
+                                    {% if row.parse_error %}
+                                        <span class="parse-error">{{ row.parse_error }}</span>
+                                    {% elif row.is_skipped %}
+                                        Atlandı
+                                    {% else %}
+                                        {{ row.get_transaction_type_display|default:"-" }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ row.category|default:"-" }}</td>
+                                <td>{{ row.target_account|default:"-" }}</td>
+                                <td>{{ row.payee|default:"-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endlocalize %}
+
+            <div class="form-actions section">
+                <a class="btn btn--primary" href="{% url 'import_confirm' bank_import.pk %}">Onay ekranına git</a>
+                <a class="btn btn--secondary" href="{% url 'import_list' %}">Ekstre listesine dön</a>
+            </div>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                {{ formset.management_form }}
+
+                <div class="import-table-wrapper section">
+                    <table class="import-table data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tarih</th>
+                                <th>Açıklama</th>
+                                <th>Tutar</th>
+                                <th>Para birimi</th>
+                                <th>Hesap</th>
+                                <th>Sınıflandırma</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in formset %}
+                                {% with row=form.instance %}
+                                    <tr>
+                                        <td>{{ row.row_number }}</td>
+                                        <td>{{ row.date|default:"-" }}</td>
+                                        <td>{{ row.description|default:"-" }}</td>
+                                        <td>{{ row.amount|default:"-" }}</td>
+                                        <td>{{ row.currency|default:"-" }}</td>
+                                        <td>{{ row.account|default:"-" }}</td>
+                                        <td class="row-form">
+                                            {% if row.parse_error %}
+                                                <p class="parse-error">{{ row.parse_error }}</p>
+                                            {% else %}
+                                                {{ form.id }}
+                                                {{ form.transaction_type }}
+                                                {{ form.category }}
+                                                {{ form.target_account }}
+                                                {{ form.payee }}
+                                                {{ form.skip_row }}
+                                            {% endif %}
+                                            {% for error in form.non_field_errors %}
+                                                <p class="parse-error">{{ error }}</p>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn--primary" type="submit">Sınıflandırmayı kaydet ve devam et</button>
+                </div>
+            </form>
+        {% endif %}
+    </section>
+{% endblock %}

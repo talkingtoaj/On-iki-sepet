@@ -62,18 +62,21 @@ Superuser; kategori, hesap ve tüm işlem türlerini oluşturabilir. Ayrıca Dja
 
 ### 5. Kullanıcı gruplarını oluşturun
 
-Uygulama iki özel grup kullanır:
+Uygulama üç özel grup kullanır:
 
 | Grup | Yetki özeti |
 |------|-------------|
 | **Data Entry** (Finans Görevlisi) | İşlem oluşturma ve düzenleme, listeleme, fiş indirme |
-| **Viewer** (Liderlik) | Salt okunur sayfalar ve fiş indirme |
+| **Viewer** (Liderlik) | Raporlar, ana sayfa özeti (bakiye) — işlem/kategori/hesap listesi yok |
+| **Approver** (Onaylayıcı) | Data Entry kullanıcılarına eklenebilen onay yetkisi — işlem ve banka ekstresi onayı |
+
+Bir kullanıcı hem **Data Entry** hem **Approver** grubunda olabilir. Bu durumda işlem girebilir ve onaylayabilir. Approver grubu tek başına yeterli değildir; onay yetkisi yalnızca Data Entry rolüne sahip kullanıcılarda geçerlidir.
 
 **Django admin üzerinden:**
 
 1. `http://127.0.0.1:8000/admin/` adresine superuser ile giriş yapın
-2. **Authentication and Authorization → Groups** bölümünden `Data Entry` ve `Viewer` gruplarını oluşturun
-3. **Users** bölümünden kullanıcıları ilgili gruplara ekleyin
+2. **Authentication and Authorization → Groups** bölümünden `Data Entry`, `Viewer` ve `Approver` gruplarını oluşturun
+3. **Users** bölümünden kullanıcıları ilgili gruplara ekleyin (onaylayıcı olması gereken Data Entry kullanıcılarına ayrıca `Approver` grubunu ekleyin)
 
 **Django shell ile:**
 
@@ -86,6 +89,7 @@ from django.contrib.auth.models import Group
 
 Group.objects.get_or_create(name="Data Entry")
 Group.objects.get_or_create(name="Viewer")
+Group.objects.get_or_create(name="Approver")
 ```
 
 Kullanıcıyı gruba eklemek için admin panelini veya shell'i kullanabilirsiniz:
@@ -95,13 +99,26 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
 user = get_user_model().objects.get(username="ornek_kullanici")
-group = Group.objects.get(name="Data Entry")
-user.groups.add(group)
+data_entry_group = Group.objects.get(name="Data Entry")
+user.groups.add(data_entry_group)
+
+# Onay yetkisi vermek için (Data Entry kullanıcılarına ek grup):
+approver_group = Group.objects.get(name="Approver")
+user.groups.add(approver_group)
 ```
 
 ```bash
-python manage.py create_default_groups
+python manage.py bootstrap_kut
 ```
+
+veya adım adım:
+
+```bash
+python manage.py create_default_groups
+python manage.py sync_profiles
+```
+
+`bootstrap_kut` grupları (`Data Entry`, `Viewer`, `Approver`), profilleri, KUT hesaplarını ve kategorileri tek seferde kurar. `sync_profiles`, kullanıcıları `Data Entry` / `Viewer` gruplarına göre `Profile` kayıtlarıyla eşleştirir. `Approver` grubu profil rolünü değiştirmez; yalnızca onay yetkisi ekler.
 
 ### 6. KUT hesaplarını yükleyin
 
@@ -122,7 +139,7 @@ Tarayıcıda:
 - Ana sayfa: http://127.0.0.1:8000/
 - Django admin: http://127.0.0.1:8000/admin/
 
-Özel sayfalar giriş gerektirir. Oturum açmak için önce `/admin/` üzerinden giriş yapmanız yeterlidir; oturum tüm uygulama genelinde geçerlidir.
+Özel sayfalar giriş gerektirir. Oturum açmak için `/accounts/login/` adresini kullanın; yönetici paneli `/admin/` üzerinden de giriş yapılabilir.
 
 Yerel geliştirmede yüklenen fiş dosyaları `media/receipts/` altında saklanır. `DEBUG=True` iken dosyalar `/media/` URL'si üzerinden sunulur.
 
@@ -149,19 +166,24 @@ uv run python manage.py test onikisepet.tests.test_report_dashboard_views
 | `/reports/` | Finansal özet raporu (aylık/yıllık preset) |
 | `/transactions/` | İşlem listesi |
 | `/transactions/<id>/edit/` | İşlem düzenleme (audit log) |
-| `/transactions/create/` | Genel işlem oluşturma |
+| `/accounts/login/` | Kullanıcı girişi |
 | `/cash-incomes/create/` | Nakit gelir (Defter elden bağış) |
 | `/cash-expenses/create/` | Nakit gider (fiş yükleme) |
 | `/bank-expenses/create/` | Banka gideri |
 | `/online-donations/create/` | Online bağış geliri |
 | `/transfers/create/` | Hesaplar arası transfer |
-| `/accounts/` | Hesap listesi |
+| `/imports/new/` | Banka ekstresi yükleme (CSV/Excel) |
+| `/imports/<id>/preview/` | Ekstre satırlarını önizleme |
+| `/imports/<id>/confirm/` | Ekstre satırlarını işlem olarak kaydetme |
+| `/accounts/` | Hesap listesi (güncel bakiye) |
 | `/accounts/create/` | Hesap oluşturma (yalnızca admin) |
 | `/categories/` | Kategori listesi |
 | `/categories/create/` | Kategori oluşturma (yalnızca admin) |
 | `/receipts/<id>/download/` | Fiş indirme |
 
 ## Ortam değişkenleri
+
+Örnek dosya: `.env.example` (kopyalayıp `.env` olarak kullanın).
 
 | Değişken | Zorunlu | Açıklama |
 |----------|---------|----------|
@@ -185,7 +207,13 @@ export GCS_MEDIA_BUCKET_NAME=oniki-sepet-media
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 ```
 
-GCS modu için production ortamında `django-storages` ve `google-cloud-storage` paketlerinin kurulması gerekir.
+GCS modu için production bağımlılıklarını kurun:
+
+```bash
+uv sync --extra production
+```
+
+Bu komut `django-storages`, `google-cloud-storage`, `gunicorn` ve `psycopg` paketlerini yükler.
 
 **Production veritabanı (PostgreSQL — hedef mimari):**
 
@@ -238,6 +266,10 @@ docker run -p 8000:8000 --env-file .env kut-finans
 ```
 
 Cloud Run için: container'ı GCP Artifact Registry'ye push edin, Cloud SQL PostgreSQL bağlantısını `DATABASE_URL` ile verin, GCS bucket'ı fiş depolama için yapılandırın.
+
+Operasyonel rehber (health check, backup, deploy pipeline, olay müdahalesi): [`docs/deployment/runbook.md`](docs/deployment/runbook.md)
+
+CI/CD: push/PR'da `.github/workflows/ci.yml` testleri çalıştırır; production deploy `.github/workflows/deploy-gcp.yml` ile manuel tetiklenir.
 
 Detaylı geliştirme kuralları için `onikisepet/docs/standards.md` dosyasına bakın.
 

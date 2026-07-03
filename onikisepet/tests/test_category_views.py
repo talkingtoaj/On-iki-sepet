@@ -54,12 +54,12 @@ class CategoryViewTests(CategoryTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_logged_in_viewer_user_can_access_category_list_page(self):
+    def test_logged_in_viewer_user_cannot_access_category_list_page(self):
         self.client.login(username=self.viewer_user.username, password=self.password)
 
         response = self.client.get(self.category_list_url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     def test_anonymous_user_is_redirected_to_login_from_category_list_page(self):
         response = self.client.get(self.category_list_url)
@@ -122,7 +122,7 @@ class CategoryViewTests(CategoryTestMixin, TestCase):
     def test_category_list_displays_existing_categories(self):
         self.create_category(name="Donation", category_type="income")
         self.create_category(name="Hospitality", category_type="expense")
-        self.client.login(username=self.viewer_user.username, password=self.password)
+        self.client.login(username=self.data_entry_user.username, password=self.password)
 
         response = self.client.get(self.category_list_url)
 

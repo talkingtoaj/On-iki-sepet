@@ -1,0 +1,105 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}Ekstre Onayı | On İki Sepet{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .import-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-family: "Trebuchet MS", Verdana, sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .import-table th,
+        .import-table td {
+            border: 1px solid rgba(217, 207, 188, 0.9);
+            padding: 10px;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .import-table th {
+            background: rgba(23, 63, 53, 0.08);
+        }
+
+        .error-list {
+            color: #8b1e1e;
+            font-family: "Trebuchet MS", Verdana, sans-serif;
+            font-weight: 700;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <p class="eyebrow">Banka ekstresi</p>
+        <h1>Kaydı Onayla</h1>
+        <p>Dosya: <strong>{{ bank_import.original_filename }}</strong></p>
+        <p>Kaydedilecek satır sayısı: <strong>{{ importable_rows|length }}</strong></p>
+
+        {% if errors %}
+            <ul class="error-list">
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <table class="import-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tarih</th>
+                    <th>Açıklama</th>
+                    <th>Tutar</th>
+                    <th>Tür</th>
+                    <th>Hesap</th>
+                    <th>Kategori / Hedef</th>
+                    <th>Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.row_number }}</td>
+                        <td>{{ row.date|default:"-" }}</td>
+                        <td>{{ row.description|default:"-" }}</td>
+                        <td>{{ row.amount|default:"-" }} {{ row.currency }}</td>
+                        <td>{{ row.get_transaction_type_display|default:"-" }}</td>
+                        <td>{{ row.account|default:"-" }}</td>
+                        <td>
+                            {% if row.category %}
+                                {{ row.category }}
+                            {% elif row.target_account %}
+                                → {{ row.target_account }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.parse_error %}
+                                Hatalı
+                            {% elif row.is_skipped %}
+                                Atlandı
+                            {% else %}
+                                Kaydedilecek
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <form method="post" style="margin-top: 20px;">
+            {% csrf_token %}
+            {% if can_approve_transactions %}
+                <button class="button" type="submit">İşlemleri kaydet</button>
+            {% else %}
+                <p>Onay için yetkili bir kullanıcının bu ekstreyi kaydetmesi gerekir.</p>
+            {% endif %}
+            <a class="secondary-link" href="{% url 'import_preview' bank_import.pk %}">Geri dön</a>
+        </form>
+    </section>
+{% endblock %}

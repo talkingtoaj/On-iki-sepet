@@ -53,8 +53,20 @@ class PermissionHardeningTests(TransactionTestMixin, TestCase):
             reverse("bank_expense_create"),
             reverse("online_donation_income_create"),
             reverse("transfer_create"),
+            reverse("import_new"),
         ]
-        self.read_only_urls = [
+        self.viewer_read_only_urls = [
+            reverse("home"),
+            reverse("report_dashboard"),
+        ]
+        self.data_entry_read_only_urls = [
+            reverse("home"),
+            reverse("category_list"),
+            reverse("account_list"),
+            reverse("transaction_list"),
+            reverse("report_dashboard"),
+        ]
+        self.admin_read_only_urls = [
             reverse("home"),
             reverse("category_list"),
             reverse("account_list"),
@@ -129,7 +141,7 @@ class PermissionHardeningTests(TransactionTestMixin, TestCase):
     def test_admin_can_access_read_only_pages(self):
         self._login(self.admin_user)
 
-        self._assert_urls_return_status(self.read_only_urls, 200)
+        self._assert_urls_return_status(self.admin_read_only_urls, 200)
 
     def test_admin_can_download_receipts(self):
         self._login(self.admin_user)
@@ -151,7 +163,7 @@ class PermissionHardeningTests(TransactionTestMixin, TestCase):
     def test_data_entry_can_access_read_only_pages(self):
         self._login(self.data_entry_user)
 
-        self._assert_urls_return_status(self.read_only_urls, 200)
+        self._assert_urls_return_status(self.data_entry_read_only_urls, 200)
 
     def test_data_entry_can_download_receipts(self):
         self._login(self.data_entry_user)
@@ -170,17 +182,24 @@ class PermissionHardeningTests(TransactionTestMixin, TestCase):
 
         self._assert_urls_return_status(self.transaction_create_urls, 403)
 
-    def test_viewer_can_access_read_only_pages(self):
+    def test_viewer_can_access_report_and_home_pages(self):
         self._login(self.viewer_user)
 
-        self._assert_urls_return_status(self.read_only_urls, 200)
+        self._assert_urls_return_status(self.viewer_read_only_urls, 200)
 
-    def test_viewer_can_download_receipts(self):
+    def test_viewer_cannot_access_transaction_list(self):
+        self._login(self.viewer_user)
+
+        response = self.client.get(reverse("transaction_list"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_viewer_cannot_download_receipts(self):
         self._login(self.viewer_user)
 
         response = self.client.get(self.receipt_download_url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     def test_anonymous_user_is_redirected_from_setup_pages(self):
         self._assert_urls_redirect_to_login(self.setup_create_urls)
@@ -189,7 +208,7 @@ class PermissionHardeningTests(TransactionTestMixin, TestCase):
         self._assert_urls_redirect_to_login(self.transaction_create_urls)
 
     def test_anonymous_user_is_redirected_from_read_only_pages(self):
-        self._assert_urls_redirect_to_login(self.read_only_urls)
+        self._assert_urls_redirect_to_login(self.admin_read_only_urls)
 
     def test_anonymous_user_is_redirected_from_receipt_download(self):
         self._assert_urls_redirect_to_login([self.receipt_download_url])

@@ -7,10 +7,10 @@ from django.shortcuts import resolve_url
 from django.test import TestCase
 from django.urls import reverse
 
-from .helpers import AccountTestMixin
+from .helpers import AccountTestMixin, TransactionTestMixin
 
 
-class AccountViewTests(AccountTestMixin, TestCase):
+class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
     password = "StrongTestPass123!"
 
     def setUp(self):
@@ -59,12 +59,12 @@ class AccountViewTests(AccountTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_logged_in_viewer_user_can_access_account_list_page(self):
+    def test_logged_in_viewer_user_cannot_access_account_list_page(self):
         self.client.login(username=self.viewer_user.username, password=self.password)
 
         response = self.client.get(self.account_list_url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     def test_anonymous_user_is_redirected_to_login_from_account_list_page(self):
         response = self.client.get(self.account_list_url)
@@ -254,13 +254,38 @@ class AccountViewTests(AccountTestMixin, TestCase):
             account_purpose="foreign_currency",
             currency="USD",
         )
-        self.client.login(username=self.viewer_user.username, password=self.password)
+        self.client.login(username=self.data_entry_user.username, password=self.password)
 
         response = self.client.get(self.account_list_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cash Account")
         self.assertContains(response, "USD Account")
+
+    def test_account_list_displays_current_balances(self):
+        from decimal import Decimal
+
+        cash_account = self.create_account(
+            name="Cash Account",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+            opening_balance=Decimal("1000.00"),
+        )
+        income_category = self.create_category(name="Donation", category_type="income")
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("250.00"),
+            target_account=cash_account,
+            category=income_category,
+            created_by=self.admin_user,
+        )
+        self.client.login(username=self.data_entry_user.username, password=self.password)
+
+        response = self.client.get(self.account_list_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1250.00 TRY")
 
     def test_account_list_displays_empty_message_when_there_are_no_accounts(self):
         self.client.login(username=self.data_entry_user.username, password=self.password)

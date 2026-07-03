@@ -52,7 +52,7 @@ class CashIncomeViewTests(TransactionTestMixin, TestCase):
         response = self.client.get(self.cash_income_create_url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Defter")
+        self.assertContains(response, "Nakit Gelir")
 
     def test_data_entry_can_access_cash_income_create_page(self):
         self.client.login(username=self.data_entry_user.username, password=self.password)

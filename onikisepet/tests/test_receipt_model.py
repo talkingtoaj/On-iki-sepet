@@ -135,6 +135,25 @@ class ReceiptModelTests(TransactionTestMixin, TestCase):
 
         self.assertEqual(receipt.original_filename, "migros.jpg")
 
+    def test_receipt_derives_file_type_from_original_filename(self):
+        receipt_model = self.get_receipt_model()
+        cases = [
+            ("receipt.pdf", "pdf"),
+            ("receipt.jpg", "jpg"),
+            ("receipt.jpeg", "jpg"),
+            ("receipt.png", "png"),
+        ]
+
+        for filename, expected_type in cases:
+            with self.subTest(filename=filename):
+                receipt = receipt_model.objects.create(
+                    transaction=self.create_cash_expense_transaction(),
+                    file=self.create_uploaded_file(filename),
+                    original_filename=filename,
+                    uploaded_by=self.user,
+                )
+                self.assertEqual(receipt.file_type, expected_type)
+
     def test_receipt_stores_uploaded_by(self):
         receipt_model = self.get_receipt_model()
 
@@ -183,17 +202,16 @@ class ReceiptModelTests(TransactionTestMixin, TestCase):
         with self.assertRaises(ValidationError):
             receipt.full_clean()
 
-    def test_receipt_rejects_bank_expense_transaction(self):
+    def test_receipt_accepts_bank_expense_transaction(self):
         receipt_model = self.get_receipt_model()
-        receipt = receipt_model(
+        receipt = receipt_model.objects.create(
             transaction=self.create_bank_expense_transaction(),
-            file=self.create_uploaded_file(),
-            original_filename="receipt.jpg",
+            file=self.create_uploaded_file("dekont.pdf"),
+            original_filename="dekont.pdf",
             uploaded_by=self.user,
         )
 
-        with self.assertRaises(ValidationError):
-            receipt.full_clean()
+        self.assertEqual(receipt.file_type, "pdf")
 
     def test_receipt_str_returns_readable_value(self):
         receipt_model = self.get_receipt_model()

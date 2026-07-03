@@ -1,0 +1,49 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}Bekleyen Hesap Değişiklikleri | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <header class="page-header">
+            <p class="eyebrow">Onay</p>
+            <h1>Bekleyen hesap değişiklikleri</h1>
+        </header>
+
+        {% if change_requests %}
+            <div class="data-table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Hesap</th>
+                            <th scope="col">Önerilen ad</th>
+                            <th scope="col">Talep eden</th>
+                            <th scope="col">Tarih</th>
+                            <th scope="col">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for change_request in change_requests %}
+                            <tr>
+                                <td>{{ change_request.account.name }}</td>
+                                <td>{{ change_request.proposed_name }}</td>
+                                <td>{{ change_request.requested_by.username }}</td>
+                                <td>{{ change_request.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    <div class="approval-actions">
+                                        <form method="post" action="{% url 'account_change_request_approve' change_request.pk %}">
+                                            {% csrf_token %}
+                                            <button class="approve-button" type="submit">Onayla</button>
+                                        </form>
+                                        <a class="reject-button" href="{% url 'account_change_request_reject' change_request.pk %}">Reddet</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">Bekleyen hesap değişiklik talebi yok.</p>
+        {% endif %}
+    </section>
+{% endblock %}
