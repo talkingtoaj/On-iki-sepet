@@ -5,8 +5,8 @@ from onikisepet.bootstrap import bootstrap_kut
 
 class Command(BaseCommand):
     help = (
-        "KUT finans uygulaması için ilk kurulum: gruplar, profiller, "
-        "hesaplar ve kategoriler."
+        "KUT finans uygulaması için ilk kurulum: süper kullanıcı, gruplar, "
+        "profiller, hesaplar ve kategoriler."
     )
 
     def handle(self, *args, **options):
@@ -20,6 +20,15 @@ class Command(BaseCommand):
             )
         else:
             self.stdout.write("Oluşturulan grup sayısı: 0")
+
+        if result["superuser_created"]:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Oluşturulan süper kullanıcı sayısı: {result['superuser_created']}"
+                )
+            )
+        else:
+            self.stdout.write("Oluşturulan süper kullanıcı sayısı: 0")
 
         self.stdout.write(
             f"Senkronize edilen profil sayısı: {result['profiles_synced']}"
