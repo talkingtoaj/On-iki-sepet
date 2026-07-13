@@ -40,10 +40,15 @@ steps:
       - $PROJECT_ID:us-central1:lb-db2
       - -e
       - DJANGO_SETTINGS_MODULE=config.production_settings
+      # Bare "-e VARNAME" (no "=value") forwards the real secretEnv value.
+      # "-e VARNAME=$$VARNAME" does NOT work here: exec-wrapper is a
+      # shell-less static binary, and Cloud Build's own "$$" in args is an
+      # escape for a literal "$", not a secretEnv substitution — it silently
+      # passed the literal string "$VARNAME" instead of the secret.
       - -e
-      - DJANGO_SECRET_KEY=$$DJANGO_SECRET_KEY
+      - DJANGO_SECRET_KEY
       - -e
-      - DATABASE_URL=$$DATABASE_URL
+      - DATABASE_URL
       - -e
       - DJANGO_ALLOWED_HOSTS=.run.app
       - --
