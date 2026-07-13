@@ -1,0 +1,84 @@
+# Cloud Build trigger: push to main -> build, migrate, deploy to Cloud Run.
+# GCP project: lifebalance-nuxt (see docs/deployment/runbook.md)
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/oniki-sepet-django-secret-key/versions/latest
+      env: 'DJANGO_SECRET_KEY'
+    - versionName: projects/$PROJECT_ID/secrets/oniki-sepet-database-url/versions/latest
+      env: 'DATABASE_URL'
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --cache-from=us.gcr.io/$PROJECT_ID/kut-finans:latest
+      - -t
+      - us.gcr.io/$PROJECT_ID/kut-finans:$COMMIT_SHA
+      - -t
+      - us.gcr.io/$PROJECT_ID/kut-finans:latest
+      - .
+
+  - id: push-sha
+    name: gcr.io/cloud-builders/docker
+    args: ['push', 'us.gcr.io/$PROJECT_ID/kut-finans:$COMMIT_SHA']
+
+  - id: push-latest
+    name: gcr.io/cloud-builders/docker
+    args: ['push', 'us.gcr.io/$PROJECT_ID/kut-finans:latest']
+
+  # Pre-deploy migration. Never run migrations at container startup on
+  # Cloud Run: concurrent cold starts would race the same migration.
+  - id: migrate
+    name: gcr.io/google-appengine/exec-wrapper
+    secretEnv: ['DJANGO_SECRET_KEY', 'DATABASE_URL']
+    args:
+      - -i
+      - us.gcr.io/$PROJECT_ID/kut-finans:$COMMIT_SHA
+      - -s
+      - $PROJECT_ID:us-central1:lb-db2
+      - -e
+      - DJANGO_SETTINGS_MODULE=config.production_settings
+      - -e
+      - DJANGO_SECRET_KEY=$$DJANGO_SECRET_KEY
+      - -e
+      - DATABASE_URL=$$DATABASE_URL
+      - -e
+      - DJANGO_ALLOWED_HOSTS=.run.app
+      - --
+      - python
+      - manage.py
+      - migrate
+      - --noinput
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - kut-finans
+      - --image=us.gcr.io/$PROJECT_ID/kut-finans:$COMMIT_SHA
+      - --region=us-central1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --add-cloudsql-instances=$PROJECT_ID:us-central1:lb-db2
+      - --set-secrets=DJANGO_SECRET_KEY=oniki-sepet-django-secret-key:latest,DATABASE_URL=oniki-sepet-database-url:latest
+      - --set-env-vars=DJANGO_SETTINGS_MODULE=config.production_settings,DJANGO_ALLOWED_HOSTS=.run.app,DJANGO_FILE_STORAGE_BACKEND=gcs,GCS_MEDIA_BUCKET_NAME=kut-finans-media,DJANGO_SECURE_SSL_REDIRECT=true
+      - --memory=512Mi
+      - --cpu=1
+      - --min-instances=0
+      - --max-instances=10
+      - --timeout=300
+      - --port=8000
+
+images:
+  - us.gcr.io/$PROJECT_ID/kut-finans:$COMMIT_SHA
+  - us.gcr.io/$PROJECT_ID/kut-finans:latest
+
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s

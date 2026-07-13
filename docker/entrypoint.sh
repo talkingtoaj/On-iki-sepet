@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
-python manage.py migrate --noinput
-
+# Migrations run as a Cloud Build pre-deploy step (cloudbuild.yaml),
+# not here — avoids concurrent-cold-start migration races on Cloud Run.
 exec "$@"
