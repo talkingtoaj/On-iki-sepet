@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.cache import cache
@@ -6,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.forms import modelformset_factory
 from django.http import FileResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_GET, require_POST
@@ -13,6 +15,9 @@ from django.views.decorators.http import require_GET, require_POST
 from onikisepet import messages as msg
 
 from .decorators import application_access_required
+from .form_guides import build_record_type_guide_context, get_form_guide
+from .form_examples import build_transaction_form_example
+from .form_currency import build_transaction_form_currency_context
 
 from .forms import (
     AccountForm,
@@ -52,6 +57,7 @@ from .permissions import (
     can_view_reference_data,
     can_view_operational_pages,
     can_view_transaction_list,
+    is_viewer,
 )
 from .selectors import (
     approved_transactions,
@@ -69,6 +75,7 @@ from .usecases import (
     dashboard,
     financial_calculations,
     report_periods,
+    transaction_feedback,
 )
 
 
@@ -79,6 +86,25 @@ def _create_transaction_from_form(form, user):
     transaction.save()
     audit.log_transaction_create(transaction=transaction, user=user)
     return transaction
+
+
+def _render_transaction_create_form(request, *, form, guide_key, form_enctype=None):
+    context = {
+        "form": form,
+        "form_guide": get_form_guide(guide_key),
+        "form_example": build_transaction_form_example(form, guide_key),
+        "form_currency": build_transaction_form_currency_context(form),
+    }
+    if form_enctype:
+        context["form_enctype"] = form_enctype
+    return render(request, "onikisepet/transaction_form.html", context)
+
+
+def _flash_transaction_created(request, transaction):
+    messages.success(
+        request,
+        transaction_feedback.transaction_created_message(transaction),
+    )
 
 
 BankStatementRowFormSet = modelformset_factory(
@@ -116,9 +142,33 @@ def _render_transaction_row(request, transaction):
     )
 
 
+def _transaction_list_filters(request):
+    if request.method == "POST" and (
+        "status" in request.POST or "mine" in request.POST
+    ):
+        source = request.POST
+    else:
+        source = request.GET
+    status_filter = source.get("status", "")
+    mine_filter = source.get("mine") == "1"
+    return status_filter, mine_filter
+
+
+def _transaction_list_url(*, status_filter="", mine_filter=False):
+    params = {}
+    if status_filter:
+        params["status"] = status_filter
+    if mine_filter:
+        params["mine"] = "1"
+    url = reverse("transaction_list")
+    if params:
+        return f"{url}?{urlencode(params)}"
+    return url
+
+
 def _build_transaction_list_context(request):
     transactions = _transaction_row_queryset().order_by("-date", "-pk")
-    status_filter = request.GET.get("status", "")
+    status_filter, mine_filter = _transaction_list_filters(request)
     if status_filter == "pending":
         transactions = transactions.filter(
             approval_status=Transaction.ApprovalStatus.PENDING,
@@ -127,10 +177,17 @@ def _build_transaction_list_context(request):
         transactions = transactions.filter(
             approval_status=Transaction.ApprovalStatus.APPROVED,
         )
+    elif status_filter == "rejected":
+        transactions = transactions.filter(
+            approval_status=Transaction.ApprovalStatus.REJECTED,
+        )
+    if mine_filter:
+        transactions = transactions.filter(created_by=request.user)
     transactions = list(transactions)
     return {
         "transactions": transactions,
         "status_filter": status_filter,
+        "mine_filter": mine_filter,
     }
 
 
@@ -228,7 +285,12 @@ def _get_bank_import_for_user(request, pk, *, allow_approver_access=False):
 
 @application_access_required
 def home(request):
-    context = dashboard.get_dashboard_context()
+    if is_viewer(request.user):
+        return redirect("report_dashboard")
+
+    context = dashboard.get_home_context(request.user)
+    if can_approve_transactions(request.user):
+        context.update(dashboard.get_approver_panel_context())
     return render(request, "onikisepet/home.html", context)
 
 
@@ -423,18 +485,19 @@ def cash_expense_create(request):
         return HttpResponseForbidden(msg.PERMISSION_CREATE_CASH_EXPENSES)
 
     if request.method == "POST":
-        form = CashExpenseForm(request.POST, request.FILES)
+        form = CashExpenseForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            cash_ops.create_cash_transaction(form, request.user)
-            messages.success(request, "Nakit gider kaydedildi.")
+            transaction = cash_ops.create_cash_transaction(form, request.user)
+            _flash_transaction_created(request, transaction)
             return redirect("transaction_list")
     else:
-        form = CashExpenseForm()
+        form = CashExpenseForm(user=request.user)
 
-    return render(
+    return _render_transaction_create_form(
         request,
-        "onikisepet/cash_expense_form.html",
-        {"form": form},
+        form=form,
+        guide_key="cash_expense",
+        form_enctype="multipart/form-data",
     )
 
 
@@ -444,18 +507,19 @@ def bank_expense_create(request):
         return HttpResponseForbidden(msg.PERMISSION_CREATE_BANK_EXPENSES)
 
     if request.method == "POST":
-        form = BankExpenseForm(request.POST, request.FILES)
+        form = BankExpenseForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            bank_ops.create_bank_expense_transaction(form, request.user)
-            messages.success(request, "Banka gideri kaydedildi.")
+            transaction = bank_ops.create_bank_expense_transaction(form, request.user)
+            _flash_transaction_created(request, transaction)
             return redirect("transaction_list")
     else:
-        form = BankExpenseForm()
+        form = BankExpenseForm(user=request.user)
 
-    return render(
+    return _render_transaction_create_form(
         request,
-        "onikisepet/bank_expense_form.html",
-        {"form": form},
+        form=form,
+        guide_key="bank_expense",
+        form_enctype="multipart/form-data",
     )
 
 
@@ -465,18 +529,18 @@ def cash_income_create(request):
         return HttpResponseForbidden(msg.PERMISSION_CREATE_CASH_INCOME)
 
     if request.method == "POST":
-        form = CashIncomeForm(request.POST)
+        form = CashIncomeForm(request.POST, user=request.user)
         if form.is_valid():
-            _create_transaction_from_form(form, request.user)
-            messages.success(request, "Nakit gelir kaydedildi.")
+            transaction = _create_transaction_from_form(form, request.user)
+            _flash_transaction_created(request, transaction)
             return redirect("transaction_list")
     else:
-        form = CashIncomeForm()
+        form = CashIncomeForm(user=request.user)
 
-    return render(
+    return _render_transaction_create_form(
         request,
-        "onikisepet/cash_income_form.html",
-        {"form": form},
+        form=form,
+        guide_key="cash_income",
     )
 
 
@@ -486,18 +550,18 @@ def online_donation_income_create(request):
         return HttpResponseForbidden(msg.PERMISSION_CREATE_ONLINE_DONATION)
 
     if request.method == "POST":
-        form = OnlineDonationIncomeForm(request.POST)
+        form = OnlineDonationIncomeForm(request.POST, user=request.user)
         if form.is_valid():
-            _create_transaction_from_form(form, request.user)
-            messages.success(request, "Online bağış kaydedildi.")
+            transaction = _create_transaction_from_form(form, request.user)
+            _flash_transaction_created(request, transaction)
             return redirect("transaction_list")
     else:
-        form = OnlineDonationIncomeForm()
+        form = OnlineDonationIncomeForm(user=request.user)
 
-    return render(
+    return _render_transaction_create_form(
         request,
-        "onikisepet/online_donation_income_form.html",
-        {"form": form},
+        form=form,
+        guide_key="online_donation",
     )
 
 
@@ -507,18 +571,18 @@ def transfer_create(request):
         return HttpResponseForbidden(msg.PERMISSION_CREATE_TRANSFERS)
 
     if request.method == "POST":
-        form = TransferForm(request.POST)
+        form = TransferForm(request.POST, user=request.user)
         if form.is_valid():
-            _create_transaction_from_form(form, request.user)
-            messages.success(request, "Transfer kaydedildi.")
+            transaction = _create_transaction_from_form(form, request.user)
+            _flash_transaction_created(request, transaction)
             return redirect("transaction_list")
     else:
-        form = TransferForm()
+        form = TransferForm(user=request.user)
 
-    return render(
+    return _render_transaction_create_form(
         request,
-        "onikisepet/transfer_form.html",
-        {"form": form},
+        form=form,
+        guide_key="transfer",
     )
 
 
@@ -530,6 +594,9 @@ def transaction_edit(request, pk):
         return HttpResponseForbidden(msg.PERMISSION_EDIT_TRANSACTIONS)
 
     if request.method == "POST":
+        was_rejected = (
+            transaction.approval_status == Transaction.ApprovalStatus.REJECTED
+        )
         before = audit.snapshot_transaction(transaction)
         form = TransactionEditForm(request.POST, instance=transaction)
         if form.is_valid():
@@ -541,7 +608,11 @@ def transaction_edit(request, pk):
                 before=before,
                 after=after,
             )
-            messages.success(request, "İşlem güncellendi.")
+            if was_rejected:
+                approval.resubmit_transaction(updated, request.user)
+                messages.success(request, msg.TRANSACTION_RESUBMITTED)
+            else:
+                messages.success(request, "İşlem güncellendi.")
             return redirect("transaction_list")
     else:
         form = TransactionEditForm(instance=transaction)
@@ -549,7 +620,11 @@ def transaction_edit(request, pk):
     return render(
         request,
         "onikisepet/transaction_edit_form.html",
-        {"form": form, "transaction": transaction},
+        {
+            "form": form,
+            "transaction": transaction,
+            "form_currency": build_transaction_form_currency_context(form),
+        },
     )
 
 
@@ -569,6 +644,47 @@ def transaction_approve(request, pk):
         messages.success(request, "İşlem onaylandı.")
 
     return redirect("transaction_list")
+
+
+@application_access_required
+@require_POST
+def transaction_bulk_approve(request):
+    if not can_approve_transactions(request.user):
+        return HttpResponseForbidden(msg.PERMISSION_APPROVE_TRANSACTIONS)
+
+    raw_ids = request.POST.getlist("transaction_ids")
+    transaction_ids = []
+    for raw_id in raw_ids:
+        try:
+            transaction_ids.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    approved_count = approval.bulk_approve_transactions(
+        user=request.user,
+        transaction_ids=transaction_ids,
+    )
+
+    status_filter, mine_filter = _transaction_list_filters(request)
+    if approved_count:
+        messages.success(request, msg.bulk_approve_success_message(approved_count))
+    else:
+        messages.warning(request, msg.BULK_APPROVE_NONE_SELECTED)
+
+    if request.headers.get("HX-Request"):
+        context = _build_transaction_list_context(request)
+        return render(
+            request,
+            "onikisepet/partials/transaction_table.html",
+            context,
+        )
+
+    return redirect(
+        _transaction_list_url(
+            status_filter=status_filter,
+            mine_filter=mine_filter,
+        )
+    )
 
 
 @application_access_required
@@ -804,6 +920,18 @@ def import_confirm(request, pk):
 @application_access_required
 def finance_guide(request):
     return render(request, "onikisepet/finance_guide.html")
+
+
+@application_access_required
+def record_type_guide(request):
+    if not can_create_transactions(request.user):
+        return HttpResponseForbidden(msg.PERMISSION_VIEW_RECORD_GUIDE)
+
+    return render(
+        request,
+        "onikisepet/record_type_guide.html",
+        {"record_type_guide": build_record_type_guide_context()},
+    )
 
 
 @application_access_required

@@ -1,9 +1,16 @@
 from django.utils import timezone
 
 from onikisepet.models import Account, Transaction
-from onikisepet.selectors import approved_transactions
+from onikisepet.selectors import (
+    approved_transactions,
+    pending_account_change_requests,
+    pending_bank_imports,
+    pending_transactions,
+)
 from onikisepet.usecases import financial_calculations
 from onikisepet.usecases.report_periods import get_month_bounds
+
+APPROVER_PREVIEW_LIMIT = 5
 
 
 def get_dashboard_context(reference_date=None):
@@ -41,3 +48,32 @@ def get_dashboard_context(reference_date=None):
         "top_expenses": top_expenses,
         "account_balances": account_balances,
     }
+
+
+def get_approver_panel_context(limit=APPROVER_PREVIEW_LIMIT):
+    pending_tx_qs = pending_transactions().select_related(
+        "source_account",
+        "target_account",
+        "category",
+        "created_by",
+    )
+    return {
+        "pending_transaction_count": pending_tx_qs.count(),
+        "pending_transactions_preview": pending_tx_qs.order_by("-date", "-id")[:limit],
+        "pending_account_change_count": pending_account_change_requests().count(),
+        "pending_import_count": pending_bank_imports().count(),
+    }
+
+
+def get_operator_context(user):
+    pending_count = Transaction.objects.filter(
+        created_by=user,
+        approval_status=Transaction.ApprovalStatus.PENDING,
+    ).count()
+    return {"my_pending_transaction_count": pending_count}
+
+
+def get_home_context(user, reference_date=None):
+    context = get_dashboard_context(reference_date=reference_date)
+    context.update(get_operator_context(user))
+    return context

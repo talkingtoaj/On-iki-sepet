@@ -3,7 +3,7 @@ from django.shortcuts import resolve_url
 from django.test import TestCase
 from django.urls import reverse
 
-from .helpers import TransactionTestMixin
+from .helpers import ProfileTestMixin, TransactionTestMixin
 
 
 class HomeViewAccessTests(TransactionTestMixin, TestCase):
@@ -36,6 +36,17 @@ class HomeViewAccessTests(TransactionTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_viewer_is_redirected_from_home_to_reports(self):
+        self._login(self.viewer_user)
+
+        response = self.client.get(self.home_url)
+
+        self.assertRedirects(
+            response,
+            reverse("report_dashboard"),
+            fetch_redirect_response=False,
+        )
+
     def test_data_entry_user_can_access_home(self):
         self._login(self.data_entry_user)
 
@@ -43,17 +54,80 @@ class HomeViewAccessTests(TransactionTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_viewer_can_access_home(self):
-        self._login(self.viewer_user)
+
+class RoleBasedHomeContentTests(TransactionTestMixin, ProfileTestMixin, TestCase):
+    def setUp(self):
+        self.home_url = reverse("home")
+        self.report_url = reverse("report_dashboard")
+        self.admin_user = self.create_user("role_home_admin", is_superuser=True)
+        self.data_entry_user = self.create_user(
+            "role_home_data_entry",
+            group_name="Data Entry",
+        )
+        self.approver_user = self.create_data_entry_approver("role_home_approver")
+        self.viewer_user = self.create_user("role_home_viewer", group_name="Viewer")
+
+    def _login(self, user):
+        self.client.login(username=user.username, password=self.password)
+
+    def test_approver_sees_approval_panel_on_home(self):
+        cash_account = self.create_account(
+            name="Approver Panel Cash",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+        )
+        income_category = self.create_category(
+            name="Approver Panel Income",
+            category_type="income",
+        )
+        self.create_transaction(
+            transaction_type="income",
+            amount="100.00",
+            target_account=cash_account,
+            category=income_category,
+            created_by=self.data_entry_user,
+            approval_status="pending",
+        )
+        self._login(self.approver_user)
 
         response = self.client.get(self.home_url)
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Onay Bekleyen İşler")
+        self.assertContains(response, "İşlem onayı")
+
+    def test_data_entry_without_approver_group_does_not_see_approval_panel(self):
+        self._login(self.data_entry_user)
+
+        response = self.client.get(self.home_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Onay Bekleyen İşler")
+
+    def test_admin_sees_approval_and_admin_panels(self):
+        self._login(self.admin_user)
+
+        response = self.client.get(self.home_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Onay Bekleyen İşler")
+        self.assertContains(response, "Sistem Yönetimi")
+        self.assertContains(response, reverse("user_list"))
+
+    def test_home_does_not_show_demo_sections(self):
+        self._login(self.data_entry_user)
+
+        response = self.client.get(self.home_url)
+
+        self.assertNotContains(response, "Etkileşimli Demo")
+        self.assertNotContains(response, "HTMX Finans Rehberi")
 
 
 class NavigationMenuTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.home_url = reverse("home")
+        self.report_url = reverse("report_dashboard")
         self.admin_user = self.create_user("nav_admin", is_superuser=True)
         self.data_entry_user = self.create_user(
             "nav_data_entry",
@@ -130,7 +204,7 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
     def test_viewer_sees_only_report_menu_link(self):
         self._login(self.viewer_user)
 
-        response = self.client.get(self.home_url)
+        response = self.client.get(self.report_url)
 
         self._assert_contains_links(response, self.viewer_main_menu_links)
         self._assert_not_contains_links(response, {
@@ -142,7 +216,7 @@ class NavigationMenuTests(TransactionTestMixin, TestCase):
     def test_viewer_does_not_see_create_links(self):
         self._login(self.viewer_user)
 
-        response = self.client.get(self.home_url)
+        response = self.client.get(self.report_url)
 
         self._assert_not_contains_links(response, self.transaction_create_menu_links)
         self._assert_not_contains_links(response, self.setup_create_links)

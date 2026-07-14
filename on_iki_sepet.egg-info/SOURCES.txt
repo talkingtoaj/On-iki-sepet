@@ -50,6 +50,7 @@ onikisepet/migrations/0014_accountchangerequest.py
 onikisepet/migrations/0015_transaction_reverses_transaction.py
 onikisepet/migrations/0016_migrate_approver_to_group.py
 onikisepet/migrations/0017_remove_transaction_reverses_transaction.py
+onikisepet/migrations/0018_load_kut_seed_data.py
 onikisepet/migrations/__init__.py
 onikisepet/tests/__init__.py
 onikisepet/tests/helpers.py

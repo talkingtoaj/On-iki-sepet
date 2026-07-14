@@ -5,12 +5,23 @@
 
 {% block content %}
 {% localize off %}
+    {% if can_approve_transactions %}
+        {% include "onikisepet/partials/approver_panel.html" %}
+    {% endif %}
+
     <section class="content-panel" style="margin-bottom: 24px;">
         <p class="eyebrow">KUT Kilisesi Finans</p>
         <h1>Finans Özeti</h1>
         <p>
             {{ month_start|date:"d F Y" }} – {{ month_end|date:"d F Y" }} dönemi için özet.
         </p>
+        {% if can_create_transactions and my_pending_transaction_count %}
+            <p class="home-notice">
+                <strong>{{ my_pending_transaction_count }}</strong>
+                işleminiz onay bekliyor.
+                <a href="{% url 'transaction_list' %}?status=pending">Bekleyenleri görüntüle</a>
+            </p>
+        {% endif %}
     </section>
 
     <div class="dashboard-grid">
@@ -53,6 +64,11 @@
 
         <section class="panel">
             <h2>Hızlı İşlemler</h2>
+            {% if can_create_transactions %}
+                <p class="home-notice">
+                    <a href="{% url 'record_type_guide' %}">Hangi formu kullanmalıyım?</a>
+                </p>
+            {% endif %}
             <ul class="quick-actions">
                 {% if can_create_transactions %}
                     <li><a href="{% url 'cash_income_create' %}">Nakit Gelir</a></li>
@@ -60,6 +76,7 @@
                     <li><a href="{% url 'bank_expense_create' %}">Banka Gideri</a></li>
                     <li><a href="{% url 'online_donation_income_create' %}">Online Bağış</a></li>
                     <li><a href="{% url 'transfer_create' %}">Transfer</a></li>
+                    <li><a href="{% url 'import_new' %}">Ekstre Yükle</a></li>
                 {% endif %}
                 <li><a href="{% url 'report_dashboard' %}">Detaylı Raporlar</a></li>
                 {% if can_view_operational_pages %}
@@ -69,53 +86,9 @@
         </section>
     </div>
 
-    <section class="panel js-demo" style="margin-top: 18px;">
-        <h2>Etkileşimli Demo (Vanilla JS)</h2>
-        <p style="color: var(--muted); margin-bottom: 0;">Bu bölüm sunucuya istek göndermeden tarayıcıda çalışır.</p>
-
-        <div class="js-demo__row">
-            <button type="button" class="btn btn--secondary btn--sm" id="reveal-answer-btn">
-                Cevabı göster
-            </button>
-            <p id="hidden-answer" class="js-demo__answer" hidden>
-                Net finansal durum = Gelir − Gider
-            </p>
-        </div>
-
-        <div class="js-demo__row">
-            <button type="button" class="btn btn--secondary btn--sm" id="counter-btn">
-                Sayaç: <span id="counter-value">0</span>
-            </button>
-        </div>
-    </section>
-
-    <section class="panel" style="margin-top: 18px;">
-        <h2>HTMX Finans Rehberi</h2>
-        <p style="color: var(--muted); margin-bottom: 14px;">
-            Ödev kapsamındaki üç düğmeli HTMX demosu ayrı sayfada.
-        </p>
-        <a class="btn btn--secondary btn--sm" href="{% url 'finance_guide' %}">Finans rehberini aç</a>
-    </section>
-
-    <section class="panel api-demo" style="margin-top: 18px;">
-        <h2>Etkileşimli Demo (API + JavaScript)</h2>
-        <p style="color: var(--muted); margin-bottom: 14px;">
-            Sunucu JSON döndürür; JavaScript bu veriyi alıp sayfada gösterir.
-        </p>
-
-        <div class="api-demo__buttons">
-            <button type="button" class="btn btn--secondary btn--sm" id="api-stats-btn">
-                Canlı istatistikleri getir
-            </button>
-            <button type="button" class="btn btn--ghost btn--sm" id="api-click-btn">
-                Sunucu sayacını artır
-            </button>
-        </div>
-
-        <p id="api-result" class="api-demo__result" aria-live="polite">
-            Henüz veri çekilmedi.
-        </p>
-    </section>
+    {% if can_manage_users %}
+        {% include "onikisepet/partials/admin_panel.html" %}
+    {% endif %}
 
     <section class="panel" style="margin-top: 18px;">
         <h2>Hesap Bakiyeleri (Güncel)</h2>
@@ -133,91 +106,4 @@
         {% endif %}
     </section>
 {% endlocalize %}
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(function () {
-    // 1) Gizli cevabı göster / gizle
-    var revealBtn = document.getElementById("reveal-answer-btn");
-    var answer = document.getElementById("hidden-answer");
-
-    revealBtn.addEventListener("click", function () {
-        var isHidden = answer.hasAttribute("hidden");
-        if (isHidden) {
-            answer.removeAttribute("hidden");
-            revealBtn.textContent = "Cevabı gizle";
-        } else {
-            answer.setAttribute("hidden", "");
-            revealBtn.textContent = "Cevabı göster";
-        }
-    });
-
-    // 2) Sayacı artır (sunucuya gitmez, sadece sayfadaki sayı değişir)
-    var counterBtn = document.getElementById("counter-btn");
-    var counterValue = document.getElementById("counter-value");
-    var count = 0;
-
-    counterBtn.addEventListener("click", function () {
-        count = count + 1;
-        counterValue.textContent = String(count);
-    });
-
-    // 3) API — sunucudan JSON al ve ekranda göster
-    var apiStatsBtn = document.getElementById("api-stats-btn");
-    var apiClickBtn = document.getElementById("api-click-btn");
-    var apiResult = document.getElementById("api-result");
-
-    function getCsrfToken() {
-        var match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
-        return match ? decodeURIComponent(match[1]) : "";
-    }
-
-    function showApiStats(data) {
-        var text =
-            "Onaylı işlem: " + data.approved_transactions +
-            " | Aktif hesap: " + data.active_accounts;
-        if (data.pending_approvals !== null && data.pending_approvals !== undefined) {
-            text += " | Bekleyen onay: " + data.pending_approvals;
-        }
-        if (data.last_refreshed_at) {
-            text += " | Son yenileme: " + data.last_refreshed_at;
-        }
-        apiResult.textContent = text;
-    }
-
-    apiStatsBtn.addEventListener("click", async function () {
-        apiResult.textContent = "Yükleniyor...";
-        try {
-            var response = await fetch("{% url 'api_finance_stats' %}");
-            if (!response.ok) {
-                throw new Error("HTTP " + response.status);
-            }
-            var payload = await response.json();
-            showApiStats(payload.data);
-        } catch (error) {
-            apiResult.textContent = "Hata: veri alınamadı.";
-        }
-    });
-
-    apiClickBtn.addEventListener("click", async function () {
-        apiResult.textContent = "Gönderiliyor...";
-        try {
-            var response = await fetch("{% url 'api_finance_refresh' %}", {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": getCsrfToken(),
-                },
-            });
-            if (!response.ok) {
-                throw new Error("HTTP " + response.status);
-            }
-            var payload = await response.json();
-            showApiStats(payload.data);
-        } catch (error) {
-            apiResult.textContent = "Hata: sayaç artırılamadı.";
-        }
-    });
-})();
-</script>
 {% endblock %}

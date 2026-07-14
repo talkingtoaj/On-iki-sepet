@@ -38,11 +38,18 @@ PERMISSION_CREATE_TRANSFERS = "Transfer oluşturma yetkiniz yok."
 PERMISSION_IMPORT_BANK_STATEMENTS = "Banka ekstresi yükleme yetkiniz yok."
 PERMISSION_CONFIRM_BANK_IMPORT = "Banka ekstresi onaylama yetkiniz yok."
 PERMISSION_EDIT_TRANSACTIONS = "İşlem düzenleme yetkiniz yok."
+TRANSACTION_RESUBMITTED = "İşlem düzeltildi ve yeniden onaya gönderildi."
 REJECTION_REASON_REQUIRED = "Red nedeni zorunludur."
 PERMISSION_APPROVE_TRANSACTIONS = "İşlem onaylama yetkiniz yok."
+BULK_APPROVE_NONE_SELECTED = "Onaylanacak işlem seçilmedi."
+
+
+def bulk_approve_success_message(count):
+    return f"{count} işlem onaylandı."
 PERMISSION_ACCESS_APPLICATION = "Bu uygulamaya erişim yetkiniz yok."
 PERMISSION_MANAGE_USERS = "Kullanıcı yönetimi yetkiniz yok."
 PERMISSION_VIEW_OPERATIONAL_PAGES = "Bu sayfayı görüntüleme yetkiniz yok."
+PERMISSION_VIEW_RECORD_GUIDE = "Kayıt rehberini görüntüleme yetkiniz yok."
 
 INCOME_TO_EXPENSE_ACCOUNT_FORBIDDEN = "Gelir işlemleri gider hesabına kaydedilemez."
 EXPENSE_FROM_ONLINE_DONATION_FORBIDDEN = "Online bağış hesabından gider yapılamaz."

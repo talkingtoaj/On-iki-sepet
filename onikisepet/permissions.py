@@ -1,4 +1,5 @@
 from django.db.models import Count
+from django.urls import reverse
 
 from onikisepet.models import Profile, Transaction
 
@@ -79,9 +80,12 @@ def can_create_transactions(user):
 def can_edit_transaction(user, transaction):
     if not can_create_transactions(user):
         return False
-    if transaction.approval_status != Transaction.ApprovalStatus.PENDING:
+    if transaction.created_by_id != user.id:
         return False
-    return transaction.created_by_id == user.id
+    return transaction.approval_status in (
+        Transaction.ApprovalStatus.PENDING,
+        Transaction.ApprovalStatus.REJECTED,
+    )
 
 
 def user_in_approver_group(user):
@@ -123,3 +127,15 @@ def can_edit_bank_import_preview(user, bank_import):
     if user.is_superuser:
         return True
     return bank_import.uploaded_by_id == user.id
+
+
+def is_viewer(user):
+    if user.is_superuser:
+        return False
+    return resolve_user_role(user) == Profile.Role.VIEWER
+
+
+def get_post_login_redirect_url(user):
+    if is_viewer(user):
+        return reverse("report_dashboard")
+    return reverse("home")

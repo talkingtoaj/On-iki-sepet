@@ -3,13 +3,14 @@ import io
 import re
 import unicodedata
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 
 from django.core.exceptions import ValidationError
 from django.db import transaction as db_transaction
 
 from onikisepet import messages as msg
+from onikisepet.money_input import parse_localized_decimal
 from onikisepet.models import Account, BankStatementImport, BankStatementRow, Transaction
 from onikisepet.usecases import approval
 from onikisepet.validators import validate_bank_import_file_extension
@@ -36,7 +37,6 @@ STANDARD_REQUIRED_COLUMNS = ("date", "description", "amount", "currency", "accou
 TURKISH_BANK_REQUIRED_COLUMNS = ("date", "description", "amount")
 
 DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%m/%d/%Y")
-CURRENCY_SUFFIX_PATTERN = re.compile(r"\s*(?:TL|TRY|USD|EUR)\s*$", re.IGNORECASE)
 
 
 def normalize_header(value):
@@ -99,30 +99,7 @@ def parse_date_value(value):
 
 
 def parse_amount_value(value):
-    if value is None:
-        raise ValidationError("Tutar boş olamaz.")
-
-    if isinstance(value, (int, float, Decimal)):
-        amount = Decimal(str(value))
-    else:
-        text = str(value).strip()
-        if not text:
-            raise ValidationError("Tutar boş olamaz.")
-
-        text = CURRENCY_SUFFIX_PATTERN.sub("", text)
-        normalized = text.replace(" ", "")
-        if "," in normalized and "." in normalized:
-            if normalized.rfind(",") > normalized.rfind("."):
-                normalized = normalized.replace(".", "").replace(",", ".")
-            else:
-                normalized = normalized.replace(",", "")
-        elif "," in normalized:
-            normalized = normalized.replace(",", ".")
-
-        try:
-            amount = Decimal(normalized)
-        except InvalidOperation as exc:
-            raise ValidationError(f"Geçersiz tutar: {text}") from exc
+    amount = parse_localized_decimal(value)
 
     if amount == Decimal("0"):
         raise ValidationError("Tutar 0 olamaz.")

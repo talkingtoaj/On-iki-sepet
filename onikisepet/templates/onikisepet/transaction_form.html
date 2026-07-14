@@ -1,0 +1,50 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}{{ form_guide.title }} | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <header class="page-header">
+            <p class="eyebrow">Kayıt</p>
+            <h1>{{ form_guide.title }}</h1>
+        </header>
+
+        {% include "onikisepet/partials/form_intro.html" %}
+
+        {% if form_example.summary %}
+            <section class="form-example" aria-label="Örnek kayıt">
+                <p class="form-example__label">Örnek kayıt</p>
+                <p class="form-example__summary">{{ form_example.summary }}</p>
+                {% if form_example.has_file_field %}
+                    <p class="form-example__note">
+                        Makbuz veya dekont alanı örnekle doldurulmaz; kaydetmeden önce siz yüklemelisiniz.
+                    </p>
+                {% endif %}
+                <button
+                    type="button"
+                    class="btn btn--secondary btn--sm"
+                    data-fill-form-example
+                >
+                    Örnek göster
+                </button>
+            </section>
+            {{ form_example.values|json_script:"transaction-form-example-data" }}
+        {% endif %}
+
+        {% include "onikisepet/partials/transaction_form_currency_data.html" %}
+
+        <form
+            class="form"
+            method="post"
+            data-transaction-form
+            {% if form_enctype %}enctype="{{ form_enctype }}"{% endif %}
+        >
+            {% csrf_token %}
+            {% include "onikisepet/includes/form_fields.html" %}
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">Kaydet</button>
+                <a class="btn btn--secondary" href="{% url 'transaction_list' %}">İptal</a>
+            </div>
+        </form>
+    </section>
+{% endblock %}

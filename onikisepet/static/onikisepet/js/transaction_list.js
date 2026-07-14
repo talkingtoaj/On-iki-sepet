@@ -5,30 +5,26 @@
         return value.trim().toLocaleLowerCase("tr-TR");
     }
 
-    function setActiveTransactionFilter(trigger) {
+    function setActiveTransactionFilter() {
         var bar = document.querySelector("[data-transaction-filter-bar]");
         if (!bar) {
             return;
         }
 
-        bar.querySelectorAll(".filter-btn").forEach(function (button) {
-            button.classList.remove("filter-btn--active");
+        var params = new URLSearchParams(window.location.search);
+        var status = params.get("status") || "";
+        var mine = params.get("mine") === "1";
+
+        bar.querySelectorAll("[data-status-filter]").forEach(function (button) {
+            button.classList.toggle(
+                "filter-btn--active",
+                button.dataset.statusFilter === status
+            );
         });
 
-        if (trigger && trigger.classList.contains("filter-btn")) {
-            trigger.classList.add("filter-btn--active");
-            return;
-        }
-
-        var params = new URLSearchParams(window.location.search);
-        var status = params.get("status");
-        var buttons = bar.querySelectorAll(".filter-btn");
-        if (status === "pending" && buttons[1]) {
-            buttons[1].classList.add("filter-btn--active");
-        } else if (status === "approved" && buttons[2]) {
-            buttons[2].classList.add("filter-btn--active");
-        } else if (buttons[0]) {
-            buttons[0].classList.add("filter-btn--active");
+        var mineButton = bar.querySelector("[data-mine-filter]");
+        if (mineButton) {
+            mineButton.classList.toggle("filter-btn--active", mine);
         }
     }
 
@@ -44,6 +40,69 @@
             return document.getElementById("transaction-table");
         }
         return null;
+    }
+
+    function initBulkApprove(root) {
+        var form = root.querySelector("#transaction-bulk-approve-form");
+        if (!form || form.dataset.bound === "true") {
+            return;
+        }
+        form.dataset.bound = "true";
+
+        function visiblePendingCheckboxes() {
+            return Array.prototype.filter.call(
+                root.querySelectorAll("[data-pending-select]"),
+                function (checkbox) {
+                    var rowGroup = checkbox.closest("[data-transaction-row-group]");
+                    return (
+                        !rowGroup
+                        || !rowGroup.classList.contains("transaction-row-group--hidden")
+                    );
+                }
+            );
+        }
+
+        function updateBulkApproveState() {
+            var submitButton = form.querySelector("[data-bulk-approve-submit]");
+            var countLabel = form.querySelector("[data-bulk-approve-count]");
+            var selectAll = form.querySelector("[data-select-all-pending]");
+            var visible = visiblePendingCheckboxes();
+            var selected = visible.filter(function (checkbox) {
+                return checkbox.checked;
+            });
+
+            if (submitButton) {
+                submitButton.disabled = selected.length === 0;
+            }
+            if (countLabel) {
+                countLabel.textContent = selected.length
+                    ? selected.length + " işlem seçildi"
+                    : "";
+            }
+            if (selectAll) {
+                selectAll.checked = visible.length > 0 && selected.length === visible.length;
+                selectAll.indeterminate = (
+                    selected.length > 0 && selected.length < visible.length
+                );
+            }
+        }
+
+        var selectAll = form.querySelector("[data-select-all-pending]");
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                visiblePendingCheckboxes().forEach(function (checkbox) {
+                    checkbox.checked = selectAll.checked;
+                });
+                updateBulkApproveState();
+            });
+        }
+
+        root.querySelectorAll("[data-pending-select]").forEach(function (checkbox) {
+            checkbox.addEventListener("change", updateBulkApproveState);
+        });
+
+        root.updateBulkApproveState = updateBulkApproveState;
+        updateBulkApproveState();
     }
 
     function initTransactionList(root) {
@@ -71,8 +130,13 @@
                         row.setAttribute("aria-expanded", "false");
                     }
                 });
+                if (typeof root.updateBulkApproveState === "function") {
+                    root.updateBulkApproveState();
+                }
             });
         }
+
+        initBulkApprove(root);
 
         root.querySelectorAll("[data-transaction-row]").forEach(function (row) {
             if (row.dataset.expandBound === "true") {
@@ -132,7 +196,7 @@
         initTransactionList(listRoot);
 
         if (event.target.id === "transaction-table") {
-            setActiveTransactionFilter(event.detail.requestConfig.elt);
+            setActiveTransactionFilter();
         }
     });
 

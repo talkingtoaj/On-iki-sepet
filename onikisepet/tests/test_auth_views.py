@@ -1,15 +1,28 @@
+from django.conf import settings
+from django.shortcuts import resolve_url
 from django.test import TestCase
 from django.urls import reverse
 
-from .helpers import TransactionTestMixin
+from onikisepet.permissions import DATA_ENTRY_GROUP, VIEWER_GROUP
+
+from .helpers import ProfileTestMixin, TransactionTestMixin
 
 
-class AuthViewTests(TransactionTestMixin, TestCase):
+class AuthViewTests(TransactionTestMixin, ProfileTestMixin, TestCase):
     def setUp(self):
         self.login_url = reverse("login")
         self.logout_url = reverse("logout")
         self.home_url = reverse("home")
-        self.user = self.create_user("auth_user")
+        self.report_url = reverse("report_dashboard")
+        self.data_entry_user = self.create_user(
+            "auth_data_entry",
+            group_name=DATA_ENTRY_GROUP,
+        )
+        self.viewer_user = self.create_user(
+            "auth_viewer",
+            group_name=VIEWER_GROUP,
+        )
+        self.user = self.data_entry_user
 
     def test_login_page_is_accessible_for_anonymous_users(self):
         response = self.client.get(self.login_url)
@@ -18,16 +31,28 @@ class AuthViewTests(TransactionTestMixin, TestCase):
         self.assertContains(response, "KUT Finans")
         self.assertContains(response, "Giriş yap")
 
-    def test_successful_login_redirects_to_home(self):
+    def test_successful_login_redirects_data_entry_to_home(self):
         response = self.client.post(
             self.login_url,
             data={
-                "username": self.user.username,
+                "username": self.data_entry_user.username,
                 "password": self.password,
             },
         )
 
         self.assertRedirects(response, self.home_url, fetch_redirect_response=False)
+
+    def test_successful_login_redirects_viewer_to_reports(self):
+        response = self.client.post(
+            self.login_url,
+            data={
+                "username": self.viewer_user.username,
+                "password": self.password,
+            },
+        )
+
+        self.assertRedirects(response, self.report_url, fetch_redirect_response=False)
+
 
     def test_successful_login_honors_next_parameter(self):
         transaction_list_url = reverse("transaction_list")

@@ -1,10 +1,48 @@
 {% load l10n %}
 {% localize off %}
 {% if transactions %}
+    {% if can_approve_transactions %}
+        <form
+            id="transaction-bulk-approve-form"
+            class="bulk-approve-form"
+            method="post"
+            action="{% url 'transaction_bulk_approve' %}"
+            hx-post="{% url 'transaction_bulk_approve' %}"
+            hx-target="#transaction-table"
+            hx-swap="innerHTML"
+            hx-indicator="#transaction-table-loading"
+            hx-confirm="Seçili işlemleri onaylamak istediğinize emin misiniz?"
+        >
+            {% csrf_token %}
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <input type="hidden" name="mine" value="{% if mine_filter %}1{% endif %}">
+            <div class="bulk-approve-bar" data-bulk-approve-bar>
+                <label class="bulk-approve-bar__select-all">
+                    <input type="checkbox" data-select-all-pending>
+                    Tümünü seç
+                </label>
+                <button
+                    type="submit"
+                    class="btn btn--primary bulk-approve-bar__submit"
+                    data-bulk-approve-submit
+                    disabled
+                >
+                    Seçilenleri onayla
+                </button>
+                <span class="bulk-approve-bar__count" data-bulk-approve-count aria-live="polite"></span>
+            </div>
+        </form>
+    {% endif %}
+
     <div class="transaction-table-wrapper">
         <table class="transaction-table">
             <thead>
                 <tr>
+                    {% if can_approve_transactions %}
+                        <th scope="col" class="bulk-select-col">
+                            <span class="sr-only">Seç</span>
+                        </th>
+                    {% endif %}
                     <th scope="col">Tarih</th>
                     <th scope="col">İşlem Tipi</th>
                     <th scope="col">Tutar</th>

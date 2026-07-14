@@ -2,6 +2,8 @@ from decimal import Decimal
 
 ALLOWED_RECEIPT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
 
+RECEIPT_FILE_ACCEPT = "image/*,.pdf,application/pdf"
+
 RECEIPT_EXTENSION_TO_FILE_TYPE = {
     ".pdf": "pdf",
     ".jpg": "jpg",

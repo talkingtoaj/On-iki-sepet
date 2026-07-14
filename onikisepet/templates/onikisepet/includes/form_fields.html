@@ -1,10 +1,20 @@
+<p class="form-required-note">
+    <span class="form-label__required" aria-hidden="true">*</span> ile işaretli alanlar zorunludur.
+</p>
 {% for field in form %}
     <div class="form-field{% if field.field.widget.input_type == 'checkbox' %} form-field--checkbox{% endif %}{% if field.errors %} form-field--error{% endif %}">
         {% if field.field.widget.input_type == 'checkbox' %}
             {{ field }}
             <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
         {% else %}
-            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            <label
+                class="form-label"
+                for="{{ field.id_for_label }}"
+                {% if field.name == "amount" %}
+                    data-transaction-amount-label
+                    data-transaction-amount-label-base="{{ field.label }}"
+                {% endif %}
+            >{{ field.label }}{% if field.field.required %} <span class="form-label__required" aria-hidden="true">*</span>{% endif %}</label>
             {{ field }}
         {% endif %}
         {% if field.errors %}

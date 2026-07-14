@@ -1,0 +1,48 @@
+{% load l10n %}
+<section class="content-panel approver-panel{% if not pending_transaction_count and not pending_account_change_count and not pending_import_count %} approver-panel--clear{% endif %}">
+    <header class="page-header">
+        <p class="eyebrow">Onay</p>
+        <h2>Onay Bekleyen İşler</h2>
+        {% if pending_transaction_count or pending_account_change_count or pending_import_count %}
+            <p class="approver-panel__intro">Önce bekleyen kayıtları inceleyin; ardından günlük işlemlere devam edebilirsiniz.</p>
+        {% else %}
+            <p class="approver-panel__intro">Onay bekleyen işlem, hesap değişikliği veya ekstre yok.</p>
+        {% endif %}
+    </header>
+
+    {% if pending_transaction_count or pending_account_change_count or pending_import_count %}
+        <div class="approver-panel__grid">
+            <a class="approver-panel__card" href="{% url 'transaction_list' %}?status=pending">
+                <span class="approver-panel__count">{{ pending_transaction_count }}</span>
+                <span class="approver-panel__label">İşlem onayı</span>
+            </a>
+            <a class="approver-panel__card" href="{% url 'account_change_request_list' %}">
+                <span class="approver-panel__count">{{ pending_account_change_count }}</span>
+                <span class="approver-panel__label">Hesap değişikliği</span>
+            </a>
+            <a class="approver-panel__card" href="{% url 'import_list' %}">
+                <span class="approver-panel__count">{{ pending_import_count }}</span>
+                <span class="approver-panel__label">Ekstre onayı</span>
+            </a>
+        </div>
+
+        {% if pending_transactions_preview %}
+            <div class="approver-panel__preview">
+                <h3>Son bekleyen işlemler</h3>
+                <ul class="approver-panel__list">
+                    {% for transaction in pending_transactions_preview %}
+                        <li class="approver-panel__item">
+                            <span>
+                                {{ transaction.date|date:"d.m.Y" }} ·
+                                {{ transaction.get_transaction_type_display }} ·
+                                {{ transaction.amount|stringformat:".2f" }} {{ transaction.currency }}
+                                {% if transaction.category %}· {{ transaction.category.name }}{% endif %}
+                            </span>
+                            <a href="{% url 'transaction_list' %}?status=pending">İncele</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endif %}
+</section>

@@ -15,30 +15,54 @@
             <button
                 type="button"
                 class="filter-btn{% if not status_filter %} filter-btn--active{% endif %}"
-                hx-get="{% url 'htmx_transaction_list' %}"
+                data-status-filter=""
+                hx-get="{% url 'htmx_transaction_list' %}{% if mine_filter %}?mine=1{% endif %}"
                 hx-target="#transaction-table"
                 hx-swap="innerHTML"
-                hx-push-url="{% url 'transaction_list' %}"
+                hx-push-url="{% url 'transaction_list' %}{% if mine_filter %}?mine=1{% endif %}"
                 hx-indicator="#transaction-table-loading"
             >Tümü</button>
             <button
                 type="button"
                 class="filter-btn{% if status_filter == 'pending' %} filter-btn--active{% endif %}"
-                hx-get="{% url 'htmx_transaction_list' %}?status=pending"
+                data-status-filter="pending"
+                hx-get="{% url 'htmx_transaction_list' %}?status=pending{% if mine_filter %}&mine=1{% endif %}"
                 hx-target="#transaction-table"
                 hx-swap="innerHTML"
-                hx-push-url="{% url 'transaction_list' %}?status=pending"
+                hx-push-url="{% url 'transaction_list' %}?status=pending{% if mine_filter %}&mine=1{% endif %}"
                 hx-indicator="#transaction-table-loading"
             >Bekleyen</button>
             <button
                 type="button"
                 class="filter-btn{% if status_filter == 'approved' %} filter-btn--active{% endif %}"
-                hx-get="{% url 'htmx_transaction_list' %}?status=approved"
+                data-status-filter="approved"
+                hx-get="{% url 'htmx_transaction_list' %}?status=approved{% if mine_filter %}&mine=1{% endif %}"
                 hx-target="#transaction-table"
                 hx-swap="innerHTML"
-                hx-push-url="{% url 'transaction_list' %}?status=approved"
+                hx-push-url="{% url 'transaction_list' %}?status=approved{% if mine_filter %}&mine=1{% endif %}"
                 hx-indicator="#transaction-table-loading"
             >Onaylı</button>
+            <button
+                type="button"
+                class="filter-btn{% if status_filter == 'rejected' %} filter-btn--active{% endif %}"
+                data-status-filter="rejected"
+                hx-get="{% url 'htmx_transaction_list' %}?status=rejected{% if mine_filter %}&mine=1{% endif %}"
+                hx-target="#transaction-table"
+                hx-swap="innerHTML"
+                hx-push-url="{% url 'transaction_list' %}?status=rejected{% if mine_filter %}&mine=1{% endif %}"
+                hx-indicator="#transaction-table-loading"
+            >Reddedildi</button>
+            <span class="filter-bar__divider" aria-hidden="true"></span>
+            <button
+                type="button"
+                class="filter-btn{% if mine_filter %} filter-btn--active{% endif %}"
+                data-mine-filter
+                hx-get="{% if mine_filter %}{% url 'htmx_transaction_list' %}{% if status_filter %}?status={{ status_filter }}{% endif %}{% else %}{% url 'htmx_transaction_list' %}?mine=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% endif %}"
+                hx-target="#transaction-table"
+                hx-swap="innerHTML"
+                hx-push-url="{% if mine_filter %}{% url 'transaction_list' %}{% if status_filter %}?status={{ status_filter }}{% endif %}{% else %}{% url 'transaction_list' %}?mine=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% endif %}"
+                hx-indicator="#transaction-table-loading"
+            >Benim kayıtlarım</button>
         </div>
 
         <label class="sr-only" for="transaction-search">İşlem ara</label>

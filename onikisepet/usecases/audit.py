@@ -68,5 +68,15 @@ def log_transaction_reject(*, transaction, user, before):
     )
 
 
+def log_transaction_resubmit(*, transaction, user, before):
+    _create_audit_log(
+        transaction=transaction,
+        user=user,
+        action=AuditLog.Action.RESUBMIT,
+        before=before,
+        after=_transaction_snapshot(transaction),
+    )
+
+
 def snapshot_transaction(transaction):
     return _transaction_snapshot(transaction)

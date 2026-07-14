@@ -19,10 +19,12 @@ from django.urls import include, path
 
 from config.health import health_check
 from config.storage import get_debug_media_urlpatterns
+from onikisepet.views_auth import RoleAwareLoginView
 
 urlpatterns = [
     path("health/", health_check, name="health_check"),
     path('admin/', admin.site.urls),
+    path('accounts/login/', RoleAwareLoginView.as_view(), name='login'),
     path('accounts/', include('django.contrib.auth.urls')),
     path("", include("onikisepet.urls")),
 ] + get_debug_media_urlpatterns()

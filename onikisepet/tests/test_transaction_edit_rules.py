@@ -82,17 +82,40 @@ class TransactionEditRulesTests(ProfileTestMixin, TransactionTestMixin, TestCase
 
         self.assertEqual(response.status_code, 403)
 
-    def test_edit_rejected_transaction_returns_403(self):
+    def test_edit_rejected_transaction_returns_403_for_non_creator(self):
         transaction = self._create_income(
             created_by=self.creator,
             approval_status=Transaction.ApprovalStatus.REJECTED,
         )
-        self.client.login(username=self.creator.username, password=self.password)
+        transaction.rejection_reason = "Tutar hatalı"
+        transaction.save(update_fields=["rejection_reason", "updated_at"])
+        self.client.login(username=self.other_data_entry.username, password=self.password)
         url = reverse("transaction_edit", kwargs={"pk": transaction.pk})
 
         response = self.client.post(url, self._income_edit_payload())
 
         self.assertEqual(response.status_code, 403)
+
+    def test_creator_can_edit_and_resubmit_rejected_transaction(self):
+        transaction = self._create_income(
+            created_by=self.creator,
+            approval_status=Transaction.ApprovalStatus.REJECTED,
+        )
+        transaction.rejection_reason = "Tutar hatalı"
+        transaction.save(update_fields=["rejection_reason", "updated_at"])
+        self.client.login(username=self.creator.username, password=self.password)
+        url = reverse("transaction_edit", kwargs={"pk": transaction.pk})
+
+        response = self.client.post(url, self._income_edit_payload())
+
+        self.assertRedirects(response, reverse("transaction_list"))
+        transaction.refresh_from_db()
+        self.assertEqual(transaction.amount, Decimal("150.00"))
+        self.assertEqual(
+            transaction.approval_status,
+            Transaction.ApprovalStatus.PENDING,
+        )
+        self.assertEqual(transaction.rejection_reason, "")
 
     def test_creator_can_edit_pending_transaction(self):
         transaction = self._create_income(

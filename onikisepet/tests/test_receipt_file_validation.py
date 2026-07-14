@@ -2,7 +2,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from onikisepet.forms import CashExpenseForm
+from onikisepet.constants import RECEIPT_FILE_ACCEPT
+from onikisepet.forms import BankExpenseForm, CashExpenseForm
 from onikisepet.models import Receipt
 
 from .helpers import TransactionTestMixin
@@ -124,6 +125,25 @@ class ReceiptFileValidationTests(TransactionTestMixin, TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("receipt_file", form.errors)
+
+    def test_cash_expense_receipt_file_widget_accepts_images_and_pdf(self):
+        form = CashExpenseForm()
+
+        self.assertEqual(
+            form.fields["receipt_file"].widget.attrs["accept"],
+            RECEIPT_FILE_ACCEPT,
+        )
+        self.assertIn("Telefondan fotoğraf", form.fields["receipt_file"].help_text)
+
+    def test_bank_expense_receipt_file_widget_accepts_images_and_pdf(self):
+        form = BankExpenseForm()
+
+        self.assertEqual(
+            form.fields["receipt_file"].widget.attrs["accept"],
+            RECEIPT_FILE_ACCEPT,
+        )
+        self.assertFalse(form.fields["receipt_file"].required)
+        self.assertIn("Telefondan fotoğraf", form.fields["receipt_file"].help_text)
 
     def test_invalid_receipt_file_does_not_create_transaction(self):
         self.client.login(username=self.admin_user.username, password=self.password)

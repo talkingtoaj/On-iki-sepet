@@ -1,0 +1,37 @@
+{% extends "onikisepet/base.html" %}
+
+{% block title %}Kayıt Rehberi | KUT Finans{% endblock %}
+
+{% block content %}
+    <section class="content-panel">
+        <header class="page-header">
+            <p class="eyebrow">Kayıt</p>
+            <h1>Hangi formu kullanmalıyım?</h1>
+            <p class="record-guide__intro">{{ record_type_guide.intro }}</p>
+        </header>
+
+        <div class="record-guide">
+            {% for group in record_type_guide.groups %}
+                <section class="record-guide__group">
+                    <h2>{{ group.title }}</h2>
+                    <p class="record-guide__summary">{{ group.summary }}</p>
+                    <ul class="record-guide__list">
+                        {% for item in group.items %}
+                            <li class="record-guide__item">
+                                <div class="record-guide__item-copy">
+                                    <h3>{{ item.guide.title }}</h3>
+                                    <p class="record-guide__when"><strong>Ne zaman:</strong> {{ item.when }}</p>
+                                    <p class="record-guide__detail">{{ item.guide.intro }}</p>
+                                    {% if item.guide.notice %}
+                                        <p class="record-guide__notice">{{ item.guide.notice }}</p>
+                                    {% endif %}
+                                </div>
+                                <a class="btn btn--secondary btn--sm" href="{{ item.url }}">Formu aç</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

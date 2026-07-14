@@ -483,6 +483,7 @@ textarea:focus-visible,
 
 .form-control--file {
     padding: 9px 12px;
+    min-height: 44px;
 }
 
 .form-check-input {
@@ -490,6 +491,53 @@ textarea:focus-visible,
     height: 1rem;
     margin-top: 0.2rem;
     accent-color: var(--panel-strong);
+}
+
+.form-intro {
+    margin-bottom: 24px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid var(--accent-border);
+    background: var(--accent-subtle);
+}
+
+.form-intro__text {
+    margin: 0;
+    color: var(--ink);
+}
+
+.form-intro__notice {
+    margin: 10px 0 0;
+    color: var(--pending);
+    font-size: 0.95rem;
+}
+
+.form-example {
+    margin-bottom: 24px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px dashed var(--accent-border);
+    background: var(--surface-elevated);
+}
+
+.form-example__label {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.form-example__summary {
+    margin: 0 0 12px;
+    color: var(--ink);
+}
+
+.form-example__note {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 0.95rem;
 }
 
 .form-field--error .form-control {
@@ -507,6 +555,18 @@ textarea:focus-visible,
 
 .form-help {
     margin: 6px 0 0;
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+}
+
+.form-label__required {
+    color: var(--rejected);
+    font-weight: 700;
+}
+
+.form-required-note {
+    margin: 0 0 16px;
     color: var(--muted);
     font-family: var(--font-ui);
     font-size: 0.85rem;
@@ -616,6 +676,20 @@ textarea:focus-visible,
     color: var(--rejected);
 }
 
+.transaction-rejection-reason {
+    margin: 6px 0 0;
+    max-width: 16rem;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--rejected);
+}
+
+.filter-bar__divider {
+    width: 1px;
+    height: 24px;
+    background: var(--line);
+}
+
 .badge--income {
     background: rgba(31, 122, 77, 0.12);
     color: var(--income);
@@ -707,6 +781,46 @@ textarea:focus-visible,
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 6px;
+}
+
+.bulk-approve-form {
+    margin-bottom: 14px;
+}
+
+.bulk-approve-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-elevated);
+}
+
+.bulk-approve-bar__select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--panel-strong);
+}
+
+.bulk-approve-bar__submit[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.bulk-approve-bar__count {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.bulk-select-col {
+    width: 42px;
+    text-align: center;
 }
 
 .approval-actions form {
@@ -852,6 +966,161 @@ textarea:focus-visible,
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
+}
+
+.approver-panel {
+    margin-bottom: 24px;
+    border-color: rgba(154, 107, 0, 0.22);
+}
+
+.approver-panel--clear {
+    border-color: rgba(31, 122, 77, 0.22);
+}
+
+.approver-panel__intro {
+    margin: 0;
+    color: var(--muted);
+}
+
+.approver-panel__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.approver-panel__card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--surface-elevated);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.approver-panel__card:hover {
+    border-color: var(--pending);
+    transform: translateY(-1px);
+}
+
+.approver-panel__count {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--pending);
+}
+
+.approver-panel__label {
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.approver-panel__preview {
+    margin-top: 22px;
+}
+
+.approver-panel__preview h3 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+}
+
+.approver-panel__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.approver-panel__item {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.admin-panel__copy,
+.home-notice {
+    color: var(--muted);
+}
+
+.home-notice {
+    margin-top: 12px;
+    margin-bottom: 0;
+}
+
+.admin-panel {
+    margin-top: 18px;
+}
+
+.record-guide__intro,
+.record-guide__summary {
+    color: var(--muted);
+}
+
+.record-guide__intro {
+    margin: 0;
+}
+
+.record-guide {
+    display: grid;
+    gap: 24px;
+}
+
+.record-guide__group h2 {
+    margin: 0 0 8px;
+    font-size: 1.25rem;
+}
+
+.record-guide__summary {
+    margin: 0 0 16px;
+}
+
+.record-guide__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+}
+
+.record-guide__item {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface-elevated);
+}
+
+.record-guide__item-copy h3 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+}
+
+.record-guide__when,
+.record-guide__detail,
+.record-guide__notice {
+    margin: 0 0 8px;
+}
+
+.record-guide__detail {
+    color: var(--ink);
+}
+
+.record-guide__notice {
+    color: var(--pending);
+    font-size: 0.95rem;
+}
+
+@media (max-width: 720px) {
+    .record-guide__item {
+        flex-direction: column;
+    }
 }
 
 /* Login page */

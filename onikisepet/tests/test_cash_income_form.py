@@ -63,6 +63,14 @@ class CashIncomeFormTests(TransactionTestMixin, TestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_form_is_valid_with_turkish_amount_format(self):
+        form = self.form_class(
+            data=self.build_form_data(amount="1.250,50"),
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["amount"], Decimal("1250.50"))
+
     def test_form_maps_donor_name_to_payee(self):
         form = self.form_class(data=self.build_form_data(donor_name="Mehmet Kaya"))
 

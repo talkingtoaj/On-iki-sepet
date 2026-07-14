@@ -1,0 +1,8 @@
+{% if form_guide %}
+    <div class="form-intro">
+        <p class="form-intro__text">{{ form_guide.intro }}</p>
+        {% if form_guide.notice %}
+            <p class="form-intro__notice">{{ form_guide.notice }}</p>
+        {% endif %}
+    </div>
+{% endif %}

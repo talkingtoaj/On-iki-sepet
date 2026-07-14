@@ -30,6 +30,7 @@ class AuditWorkflowTests(ProfileTestMixin, TransactionTestMixin, TestCase):
         actions = {choice for choice, _ in AuditLog.Action.choices}
         self.assertIn("approve", actions)
         self.assertIn("reject", actions)
+        self.assertIn("resubmit", actions)
 
     def test_transaction_create_logs_audit_entry(self):
         self.client.login(username=self.data_entry_user.username, password=self.password)
@@ -131,3 +132,38 @@ class AuditWorkflowTests(ProfileTestMixin, TransactionTestMixin, TestCase):
         )
         self.assertEqual(log.changed_by, self.data_entry_user)
         self.assertEqual(log.after["amount"], "150.00")
+
+    def test_rejected_transaction_resubmit_logs_resubmit_audit(self):
+        transaction = self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("100.00"),
+            target_account=self.cash_account,
+            category=self.income_category,
+            created_by=self.data_entry_user,
+            approval_status=Transaction.ApprovalStatus.REJECTED,
+        )
+        transaction.rejection_reason = "Tutar hatalı"
+        transaction.save(update_fields=["rejection_reason", "updated_at"])
+        self.client.login(username=self.data_entry_user.username, password=self.password)
+
+        self.client.post(
+            reverse("transaction_edit", kwargs={"pk": transaction.pk}),
+            data={
+                "date": "2026-06-13",
+                "amount": "150.00",
+                "payee": "Güncel Bağışçı",
+                "target_account": self.cash_account.pk,
+                "category": self.income_category.pk,
+                "description": "Güncellendi",
+            },
+        )
+
+        log = AuditLog.objects.get(
+            content_type="transaction",
+            object_id=transaction.pk,
+            action=AuditLog.Action.RESUBMIT,
+        )
+        self.assertEqual(log.changed_by, self.data_entry_user)
+        self.assertEqual(log.before["rejection_reason"], "Tutar hatalı")
+        self.assertEqual(log.after["approval_status"], Transaction.ApprovalStatus.PENDING)
+        self.assertEqual(log.after["rejection_reason"], "")

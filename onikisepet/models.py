@@ -475,6 +475,7 @@ class AuditLog(models.Model):
         UPDATE = "update", "Update"
         APPROVE = "approve", "Approve"
         REJECT = "reject", "Reject"
+        RESUBMIT = "resubmit", "Resubmit"
 
     content_type = models.CharField(max_length=50)
     object_id = models.PositiveIntegerField()

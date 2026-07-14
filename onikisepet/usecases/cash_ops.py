@@ -21,3 +21,4 @@ def create_cash_transaction(form, user):
             original_filename=receipt_file.name,
             uploaded_by=user,
         )
+    return created_transaction

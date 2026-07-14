@@ -68,7 +68,7 @@ class TransactionRejectionTests(ProfileTestMixin, TransactionTestMixin, TestCase
             Transaction.ApprovalStatus.REJECTED,
         )
 
-    def test_rejected_transaction_edit_returns_403(self):
+    def test_rejected_transaction_can_be_edited_and_resubmitted_by_creator(self):
         self.pending_transaction.approval_status = Transaction.ApprovalStatus.REJECTED
         self.pending_transaction.rejection_reason = "Kapatıldı"
         self.pending_transaction.save(
@@ -80,4 +80,27 @@ class TransactionRejectionTests(ProfileTestMixin, TransactionTestMixin, TestCase
             reverse("transaction_edit", kwargs={"pk": self.pending_transaction.pk}),
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Düzelt ve Yeniden Gönder")
+        self.assertContains(response, "Kapatıldı")
+
+        response = self.client.post(
+            reverse("transaction_edit", kwargs={"pk": self.pending_transaction.pk}),
+            data={
+                "date": "2026-06-13",
+                "amount": "125.00",
+                "payee": "Düzeltilmiş Bağışçı",
+                "target_account": self.cash_account.pk,
+                "category": self.income_category.pk,
+                "description": "Düzeltildi",
+            },
+        )
+
+        self.assertRedirects(response, reverse("transaction_list"))
+        self.pending_transaction.refresh_from_db()
+        self.assertEqual(
+            self.pending_transaction.approval_status,
+            Transaction.ApprovalStatus.PENDING,
+        )
+        self.assertEqual(self.pending_transaction.rejection_reason, "")
+        self.assertEqual(self.pending_transaction.amount, Decimal("125.00"))

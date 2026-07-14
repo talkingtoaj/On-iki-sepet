@@ -6,15 +6,34 @@
     <section class="content-panel">
         <header class="page-header">
             <p class="eyebrow">İşlemler</p>
-            <h1>İşlem Düzenle</h1>
+            {% if transaction.approval_status == "rejected" %}
+                <h1>Düzelt ve Yeniden Gönder</h1>
+            {% else %}
+                <h1>İşlem Düzenle</h1>
+            {% endif %}
             <p class="text-muted">İşlem tipi: {{ transaction.get_transaction_type_display }} (değiştirilemez)</p>
         </header>
 
-        <form class="form" method="post">
+        {% if transaction.approval_status == "rejected" %}
+            <div class="form-intro">
+                <p class="form-intro__notice">
+                    Bu kayıt reddedildi{% if transaction.rejection_reason %}: {{ transaction.rejection_reason }}{% endif %}.
+                    Kaydettiğinizde işlem yeniden onaya gönderilir.
+                </p>
+            </div>
+        {% endif %}
+
+        {% include "onikisepet/partials/transaction_form_currency_data.html" %}
+
+        <form class="form" method="post" data-transaction-form>
             {% csrf_token %}
             {% include "onikisepet/includes/form_fields.html" %}
             <div class="form-actions">
-                <button class="btn btn--primary" type="submit">Kaydet</button>
+                {% if transaction.approval_status == "rejected" %}
+                    <button class="btn btn--primary" type="submit">Yeniden gönder</button>
+                {% else %}
+                    <button class="btn btn--primary" type="submit">Kaydet</button>
+                {% endif %}
                 <a class="btn btn--secondary" href="{% url 'transaction_list' %}">İptal</a>
             </div>
         </form>

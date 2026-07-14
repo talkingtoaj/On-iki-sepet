@@ -4,11 +4,25 @@
     <tr
         class="transaction-row transaction-row--expandable"
         data-transaction-row
-        data-search-text="{{ transaction.date|date:'Y-m-d' }} {{ transaction.get_transaction_type_display }} {{ transaction.amount }} {{ transaction.currency }} {{ transaction.payee }} {% if transaction.source_account %}{{ transaction.source_account.name }}{% endif %} {% if transaction.target_account %}{{ transaction.target_account.name }}{% endif %} {% if transaction.category %}{{ transaction.category.name }}{% endif %} {{ transaction.description }}"
+        data-search-text="{{ transaction.date|date:'Y-m-d' }} {{ transaction.get_transaction_type_display }} {{ transaction.amount }} {{ transaction.currency }} {{ transaction.payee }} {% if transaction.source_account %}{{ transaction.source_account.name }}{% endif %} {% if transaction.target_account %}{{ transaction.target_account.name }}{% endif %} {% if transaction.category %}{{ transaction.category.name }}{% endif %} {{ transaction.description }} {{ transaction.rejection_reason }}"
         tabindex="0"
         aria-expanded="false"
         aria-controls="transaction-detail-{{ transaction.pk }}"
     >
+        {% if can_approve_transactions %}
+            <td class="bulk-select-col">
+                {% if transaction.approval_status == "pending" %}
+                    <input
+                        type="checkbox"
+                        name="transaction_ids"
+                        value="{{ transaction.pk }}"
+                        form="transaction-bulk-approve-form"
+                        data-pending-select
+                        aria-label="İşlem {{ transaction.pk }} seç"
+                    >
+                {% endif %}
+            </td>
+        {% endif %}
         <td>{{ transaction.date|date:"Y-m-d" }}</td>
         <td>{{ transaction.get_transaction_type_display }}</td>
         <td class="amount-cell">{{ transaction.amount|stringformat:".2f" }} {{ transaction.currency }}</td>
@@ -21,6 +35,9 @@
             <span class="badge badge--{{ transaction.approval_status }}">
                 {{ transaction.get_approval_status_display }}
             </span>
+            {% if transaction.approval_status == "rejected" and transaction.rejection_reason %}
+                <p class="transaction-rejection-reason">{{ transaction.rejection_reason }}</p>
+            {% endif %}
             {% if can_approve_transactions and transaction.approval_status == "pending" %}
                 <div class="approval-actions">
                     <form
@@ -54,8 +71,12 @@
         </td>
         {% if can_create_transactions %}
             <td>
-                {% if transaction.approval_status == "pending" and transaction.created_by_id == user.id %}
-                    <a href="{% url 'transaction_edit' transaction.pk %}">Düzenle</a>
+                {% if transaction.created_by_id == user.id %}
+                    {% if transaction.approval_status == "pending" %}
+                        <a href="{% url 'transaction_edit' transaction.pk %}">Düzenle</a>
+                    {% elif transaction.approval_status == "rejected" %}
+                        <a href="{% url 'transaction_edit' transaction.pk %}">Düzelt ve yeniden gönder</a>
+                    {% endif %}
                 {% endif %}
             </td>
         {% endif %}
@@ -67,7 +88,7 @@
     >
         <td
             id="transaction-detail-cell-{{ transaction.pk }}"
-            colspan="{% if can_create_transactions %}11{% else %}10{% endif %}"
+            colspan="{% if can_approve_transactions %}{% if can_create_transactions %}12{% else %}11{% endif %}{% elif can_create_transactions %}11{% else %}10{% endif %}"
             data-default-detail="Oluşturan: {{ transaction.created_by }}{% if transaction.approved_by %} · Onaylayan: {{ transaction.approved_by }}{% endif %}{% if transaction.rejection_reason %} · Red nedeni: {{ transaction.rejection_reason }}{% endif %}"
         >
             Oluşturan: {{ transaction.created_by }}

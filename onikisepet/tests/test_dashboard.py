@@ -79,12 +79,13 @@ class HomeDashboardViewTests(TransactionTestMixin, TestCase):
         self.home_url = reverse("home")
         self.viewer_user = self.create_user("home_viewer", group_name="Viewer")
 
-    def test_home_displays_dashboard_sections(self):
+    def test_home_redirects_viewer_to_reports(self):
         self.client.login(username=self.viewer_user.username, password=self.password)
 
         response = self.client.get(self.home_url)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Finans Özeti")
-        self.assertContains(response, "Hesap Bakiyeleri")
-        self.assertContains(response, "En Büyük Gider Kalemleri")
+        self.assertRedirects(
+            response,
+            reverse("report_dashboard"),
+            fetch_redirect_response=False,
+        )

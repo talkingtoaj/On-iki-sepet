@@ -3,11 +3,15 @@ from pathlib import Path
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from onikisepet import messages as msg
 
 from .account_rules import transfer_source_accounts, transfer_target_accounts
-from .constants import MONEY_FIELD_KWARGS, POSITIVE_MONEY_FIELD_KWARGS
+from .constants import MONEY_FIELD_KWARGS, POSITIVE_MONEY_FIELD_KWARGS, RECEIPT_FILE_ACCEPT
+from .form_account_defaults import apply_frequent_account_defaults
+from .form_currency import apply_account_choice_labels
+from .money_input import TurkishMoneyDecimalField, format_turkish_decimal
 from .models import Account, BankStatementRow, Category, Transaction
 from .selectors import active_accounts, active_categories
 from .validators import validate_bank_import_file_extension, validate_receipt_file_extension
@@ -40,6 +44,127 @@ def optional_description_field(**kwargs):
         widget=forms.Textarea,
         **kwargs,
     )
+
+
+def receipt_file_field(*, label, required=True, optional=False):
+    if optional:
+        help_text = (
+            "PDF, JPG, JPEG veya PNG (isteğe bağlı). "
+            "Telefondan fotoğraf çekebilir veya galeriden seçebilirsiniz."
+        )
+    else:
+        help_text = (
+            "PDF, JPG, JPEG veya PNG. "
+            "Telefondan fotoğraf çekebilir veya galeriden seçebilirsiniz."
+        )
+    return forms.FileField(
+        label=label,
+        required=required,
+        help_text=help_text,
+        widget=forms.ClearableFileInput(
+            attrs={"accept": RECEIPT_FILE_ACCEPT},
+        ),
+    )
+
+
+def transaction_amount_field(**kwargs):
+    defaults = {
+        **POSITIVE_MONEY_FIELD_KWARGS,
+        "label": "Tutar",
+        "help_text": "En az 0,01",
+    }
+    defaults.update(kwargs)
+    return TurkishMoneyDecimalField(**defaults)
+
+
+def apply_transaction_amount_field_config(form, *, instance=None):
+    if "amount" not in form.fields:
+        return
+
+    existing = form.fields["amount"]
+    form.fields["amount"] = transaction_amount_field(
+        label=existing.label,
+        help_text=existing.help_text or "En az 0,01",
+        required=existing.required,
+    )
+    if instance is not None and instance.pk and instance.amount is not None:
+        form.initial["amount"] = format_turkish_decimal(instance.amount)
+
+
+class HTML5DateInput(forms.DateInput):
+    input_type = "date"
+
+
+def default_transaction_date():
+    return timezone.localdate()
+
+
+def _transaction_date_initial():
+    return default_transaction_date()
+
+
+def transaction_date_widget():
+    return HTML5DateInput(format="%Y-%m-%d")
+
+
+def transaction_date_field():
+    return forms.DateField(
+        label="Tarih",
+        initial=_transaction_date_initial,
+        widget=transaction_date_widget(),
+        input_formats=["%Y-%m-%d"],
+    )
+
+
+TRANSACTION_FIELD_PLACEHOLDERS = {
+    "donor_name": "Örn. Ahmet Yılmaz",
+    "payee": "Örn. ABC Market",
+    "amount": "Örn. 1.250,50",
+    "description": "Örn. Pazar bağışı",
+}
+
+TRANSACTION_FIELD_HELP_TEXTS = {
+    "date": "Kaydın gerçekleştiği tarih.",
+    "donor_name": "Bağışı yapan kişinin adı ve soyadı.",
+    "payee": "Ödemenin yapıldığı kişi veya kurum.",
+    "category": "Raporlarda görünecek gelir/gider kalemi.",
+    "description": "İsteğe bağlı kısa not.",
+}
+
+
+def apply_transaction_field_placeholders(form):
+    for field_name, placeholder in TRANSACTION_FIELD_PLACEHOLDERS.items():
+        field = form.fields.get(field_name)
+        if field is None:
+            continue
+        field.widget.attrs.setdefault("placeholder", placeholder)
+
+
+def apply_transaction_field_help_texts(form):
+    for field_name, help_text in TRANSACTION_FIELD_HELP_TEXTS.items():
+        field = form.fields.get(field_name)
+        if field is None:
+            continue
+        if not field.help_text:
+            field.help_text = help_text
+
+
+def apply_transaction_date_field_config(form):
+    date_field = form.fields.get("date")
+    if date_field is None:
+        return
+    date_field.widget = transaction_date_widget()
+    date_field.input_formats = ["%Y-%m-%d"]
+
+
+class TransactionCreateFormMixin(StyledFormMixin):
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_transaction_date_field_config(self)
+        apply_account_choice_labels(self)
+        apply_transaction_field_placeholders(self)
+        apply_transaction_field_help_texts(self)
+        apply_frequent_account_defaults(self, user)
 
 
 def _apply_model_validation_errors(form, instance, field_map=None):
@@ -179,6 +304,7 @@ class TransactionEditForm(StyledFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        apply_transaction_date_field_config(self)
         transaction_type = self.instance.transaction_type
         if transaction_type == Transaction.TransactionType.INCOME:
             self.fields.pop("source_account", None)
@@ -187,6 +313,9 @@ class TransactionEditForm(StyledFormMixin, forms.ModelForm):
         elif transaction_type == Transaction.TransactionType.TRANSFER:
             self.fields.pop("category", None)
             self.fields.pop("payee", None)
+        apply_account_choice_labels(self)
+        apply_transaction_field_help_texts(self)
+        apply_transaction_amount_field_config(self, instance=self.instance)
 
 
 class TransactionRejectForm(StyledFormMixin, forms.Form):
@@ -197,14 +326,10 @@ class TransactionRejectForm(StyledFormMixin, forms.Form):
     )
 
 
-class CashExpenseForm(StyledFormMixin, forms.Form):
-    date = forms.DateField(label="Tarih")
+class CashExpenseForm(TransactionCreateFormMixin, forms.Form):
+    date = transaction_date_field()
     payee = forms.CharField(max_length=150, label="Alıcı")
-    amount = forms.DecimalField(
-        **POSITIVE_MONEY_FIELD_KWARGS,
-        label="Tutar",
-        help_text="En az 0,01",
-    )
+    amount = transaction_amount_field()
     cash_account = forms.ModelChoiceField(
         label="Kasa hesabı",
         queryset=active_accounts(
@@ -216,10 +341,7 @@ class CashExpenseForm(StyledFormMixin, forms.Form):
         queryset=active_categories(Category.CategoryType.EXPENSE),
     )
     description = optional_description_field(label="Açıklama")
-    receipt_file = forms.FileField(
-        label="Makbuz dosyası",
-        help_text="PDF, JPG, JPEG veya PNG",
-    )
+    receipt_file = receipt_file_field(label="Makbuz dosyası")
 
     def get_transaction_data(self):
         cash_account = self.cleaned_data["cash_account"]
@@ -244,14 +366,10 @@ class CashExpenseForm(StyledFormMixin, forms.Form):
         return receipt_file
 
 
-class BankExpenseForm(StyledFormMixin, forms.Form):
-    date = forms.DateField(label="Tarih")
+class BankExpenseForm(TransactionCreateFormMixin, forms.Form):
+    date = transaction_date_field()
     payee = forms.CharField(max_length=150, label="Alıcı")
-    amount = forms.DecimalField(
-        **POSITIVE_MONEY_FIELD_KWARGS,
-        label="Tutar",
-        help_text="En az 0,01",
-    )
+    amount = transaction_amount_field()
     bank_account = forms.ModelChoiceField(
         label="Banka hesabı",
         queryset=active_accounts(
@@ -264,10 +382,10 @@ class BankExpenseForm(StyledFormMixin, forms.Form):
         queryset=active_categories(Category.CategoryType.EXPENSE),
     )
     description = optional_description_field(label="Açıklama")
-    receipt_file = forms.FileField(
+    receipt_file = receipt_file_field(
         label="Dekont dosyası",
         required=False,
-        help_text="PDF, JPG, JPEG veya PNG (isteğe bağlı)",
+        optional=True,
     )
 
     def get_transaction_data(self):
@@ -293,14 +411,10 @@ class BankExpenseForm(StyledFormMixin, forms.Form):
         return receipt_file
 
 
-class CashIncomeForm(StyledFormMixin, forms.Form):
-    date = forms.DateField(label="Tarih")
+class CashIncomeForm(TransactionCreateFormMixin, forms.Form):
+    date = transaction_date_field()
     donor_name = forms.CharField(max_length=150, label="Bağışçı adı")
-    amount = forms.DecimalField(
-        **POSITIVE_MONEY_FIELD_KWARGS,
-        label="Tutar",
-        help_text="En az 0,01",
-    )
+    amount = transaction_amount_field()
     cash_account = forms.ModelChoiceField(
         label="Kasa hesabı",
         queryset=active_accounts(
@@ -329,14 +443,10 @@ class CashIncomeForm(StyledFormMixin, forms.Form):
         }
 
 
-class OnlineDonationIncomeForm(StyledFormMixin, forms.Form):
-    date = forms.DateField(label="Tarih")
+class OnlineDonationIncomeForm(TransactionCreateFormMixin, forms.Form):
+    date = transaction_date_field()
     donor_name = forms.CharField(max_length=150, label="Bağışçı adı")
-    amount = forms.DecimalField(
-        **POSITIVE_MONEY_FIELD_KWARGS,
-        label="Tutar",
-        help_text="En az 0,01",
-    )
+    amount = transaction_amount_field()
     online_donation_account = forms.ModelChoiceField(
         label="Online bağış hesabı",
         queryset=active_accounts(
@@ -365,13 +475,9 @@ class OnlineDonationIncomeForm(StyledFormMixin, forms.Form):
         }
 
 
-class TransferForm(StyledFormMixin, forms.Form):
-    date = forms.DateField(label="Tarih")
-    amount = forms.DecimalField(
-        **POSITIVE_MONEY_FIELD_KWARGS,
-        label="Tutar",
-        help_text="En az 0,01",
-    )
+class TransferForm(TransactionCreateFormMixin, forms.Form):
+    date = transaction_date_field()
+    amount = transaction_amount_field()
     source_account = forms.ModelChoiceField(
         label="Kaynak hesap",
         queryset=transfer_source_accounts(),

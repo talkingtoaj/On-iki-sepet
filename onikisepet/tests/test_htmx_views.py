@@ -75,6 +75,69 @@ class HtmxTransactionListViewTests(TransactionTestMixin, TestCase):
         self.assertContains(response, "Pending only")
         self.assertNotContains(response, "Approved only")
 
+    def test_htmx_transaction_list_rejected_filter(self):
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("10.00"),
+            target_account=self.cash_account,
+            category=self.income_category,
+            created_by=self.data_entry_user,
+            approval_status=Transaction.ApprovalStatus.REJECTED,
+            description="Rejected only",
+        )
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("20.00"),
+            target_account=self.cash_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+            approval_status=Transaction.ApprovalStatus.APPROVED,
+            description="Approved only",
+        )
+        self.client.login(username=self.admin_user.username, password=self.password)
+
+        response = self.client.get(
+            self.htmx_url,
+            {"status": "rejected"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rejected only")
+        self.assertNotContains(response, "Approved only")
+
+    def test_htmx_transaction_list_mine_filter(self):
+        mine = self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("10.00"),
+            target_account=self.cash_account,
+            category=self.income_category,
+            created_by=self.data_entry_user,
+            approval_status=Transaction.ApprovalStatus.PENDING,
+            description="Mine only",
+        )
+        self.create_transaction(
+            transaction_type="income",
+            amount=Decimal("20.00"),
+            target_account=self.cash_account,
+            category=self.income_category,
+            created_by=self.admin_user,
+            approval_status=Transaction.ApprovalStatus.PENDING,
+            description="Others only",
+        )
+        self.client.login(username=self.data_entry_user.username, password=self.password)
+
+        response = self.client.get(
+            self.htmx_url,
+            {"mine": "1"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mine only")
+        self.assertNotContains(response, "Others only")
+        self.assertEqual(mine.created_by_id, self.data_entry_user.id)
+
     def test_viewer_cannot_access_htmx_transaction_list(self):
         self.client.login(username=self.viewer_user.username, password=self.password)
 

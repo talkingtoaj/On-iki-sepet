@@ -103,10 +103,16 @@ class RoleAccessTests(ProfileTestMixin, TransactionTestMixin, TestCase):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, expected_status)
 
-    def test_viewer_can_access_reports_and_home(self):
+    def test_viewer_can_access_reports_and_is_redirected_from_home(self):
         self._login(self.viewer_user)
 
-        self._assert_urls_return_status(self.viewer_allowed_urls, 200)
+        self._assert_urls_return_status([self.report_url], 200)
+        response = self.client.get(self.home_url)
+        self.assertRedirects(
+            response,
+            self.report_url,
+            fetch_redirect_response=False,
+        )
 
     def test_viewer_cannot_access_operational_or_create_pages(self):
         self._login(self.viewer_user)
