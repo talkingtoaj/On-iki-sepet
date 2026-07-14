@@ -1,5 +1,8 @@
 # KUT Finans Yönetim Sistemi (On İki Sepet)
 
+Author: Sezer Mintaz
+Coach: Andrew de Jonge
+
 KUT Kilisesi için geliştirilen Django tabanlı finans yönetim sistemi. Nakit kasa (Defter), banka hesapları ve online bağışları tek merkezde birleştirir; gelir, gider ve transfer işlemlerini ayrı tutar; TRY, USD ve EUR para birimlerini karıştırmadan raporlar.
 
 ## Gereksinimler
