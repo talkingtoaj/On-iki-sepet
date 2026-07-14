@@ -10,19 +10,25 @@ Bu belge Cloud Run + Cloud SQL PostgreSQL + GCS ortamında operasyonel işlemler
 | Veritabanı | Cloud SQL PostgreSQL |
 | Fiş dosyaları | Google Cloud Storage (`GCS_MEDIA_BUCKET_NAME`) |
 | CI | GitHub Actions (`.github/workflows/ci.yml`) |
-| Deploy | GitHub Actions (`.github/workflows/deploy-gcp.yml`, manuel) |
+| Deploy | GCP Cloud Build trigger (`cloudbuild.yaml`, main'e her push'ta otomatik) |
+| Proje / Instance | `lifebalance-nuxt` / `lb-db2` (us-central1) |
 
 ## Ortam değişkenleri
 
 ```bash
 DJANGO_SETTINGS_MODULE=config.production_settings
 DJANGO_SECRET_KEY=<Secret Manager>
-DJANGO_ALLOWED_HOSTS=finans.kutkilisesi.org
+DJANGO_ALLOWED_HOSTS=.run.app
 DATABASE_URL=postgres://user:pass@/oniki_sepet?host=/cloudsql/PROJECT:REGION:INSTANCE
 DJANGO_FILE_STORAGE_BACKEND=gcs
 GCS_MEDIA_BUCKET_NAME=kut-finans-media
 DJANGO_SECURE_SSL_REDIRECT=true
 ```
+
+`DJANGO_ALLOWED_HOSTS=.run.app` (baştaki nokta Django'da subdomain wildcard'dır) — servisin
+gerçek Cloud Run URL'si ilk deploy'dan önce bilinmiyor, bu yüzden herhangi bir `*.run.app`
+host'una izin veriyoruz. Özel domain (`finans.kutkilisesi.org` vb.) bağlanınca bunu tam
+domain'e daraltın.
 
 Cloud Run, Cloud SQL bağlantısı için `--add-cloudsql-instances` ile Unix socket kullanır.
 
@@ -36,27 +42,37 @@ Cloud Run startup/liveness probe olarak yapılandırın:
 
 ```bash
 gcloud run services update kut-finans \
-  --region europe-west1 \
+  --region us-central1 \
   --startup-probe httpGet.path=/health/,httpGet.port=8000,initialDelaySeconds=10,periodSeconds=10,failureThreshold=3
 ```
 
-Manuel kontrol:
+Manuel kontrol (ilk deploy sonrası gerçek URL için `gcloud run services describe kut-finans
+--region us-central1 --format='value(status.url)'`):
 
 ```bash
-curl -sf "https://finans.kutkilisesi.org/health/"
+curl -sf "$(gcloud run services describe kut-finans --region us-central1 --format='value(status.url)')/health/"
 ```
 
 ## Deploy pipeline
 
-1. GitHub repo secret'larını tanımlayın:
-   - `GCP_PROJECT_ID`, `GCP_ARTIFACT_REGISTRY`
-   - `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`
-   - `CLOUD_SQL_INSTANCE`, `GCS_MEDIA_BUCKET_NAME`, `DJANGO_ALLOWED_HOSTS`
-2. Secret Manager'da `DJANGO_SECRET_KEY` ve `DATABASE_URL` oluşturun.
-3. Actions → **Deploy to GCP** → **Run workflow** ile deploy edin.
-4. Workflow image build → Artifact Registry push → Cloud Run deploy → `/health/` doğrulaması yapar.
+Deploy tamamen otomatik: `main` branch'ine her push, GCP Cloud Build trigger'ını tetikler
+(`cloudbuild.yaml`). Manuel adım yok.
 
-Container başlangıcında `docker/entrypoint.sh` otomatik `migrate --noinput` çalıştırır.
+Pipeline adımları (`cloudbuild.yaml`):
+1. Docker image build + `us.gcr.io/lifebalance-nuxt/kut-finans` push (`:$COMMIT_SHA` ve `:latest`)
+2. **Pre-deploy migration** — `exec-wrapper` ile Cloud SQL soketi üzerinden `manage.py migrate --noinput`
+   (container başlangıcında migration ÇALIŞTIRILMAZ — eşzamanlı cold start'larda migration
+   yarışını önlemek için)
+3. `gcloud run deploy kut-finans` (region `us-central1`, `--add-cloudsql-instances`,
+   secrets: `oniki-sepet-django-secret-key`, `oniki-sepet-database-url`)
+
+Sırlar zaten Secret Manager'da: `oniki-sepet-django-secret-key`, `oniki-sepet-database-url`.
+Veritabanı kullanıcısı `oniki_sepet_app` `oniki_sepet` veritabanının sahibidir; `PUBLIC`
+erişimi bu veritabanı üzerinde REVOKE edildi, yani diğer instance kullanıcıları bu DB'ye
+erişemez. Not: Cloud SQL Postgres'te her uygulama kullanıcısı `cloudsqlsuperuser` grubunun
+üyesi olarak oluşturulur — bu, `oniki_sepet_app`'in teoride instance'taki diğer DB'lere
+bağlanabildiği anlamına gelir (platformun kendi kısıtı, tam izolasyon mümkün değil). Pratikte
+risk düşük: kimlik bilgileri yalnızca bu uygulamanın Secret Manager sırlarında bulunuyor.
 
 ## Backup (Cloud SQL)
 
@@ -102,7 +118,7 @@ Restore öncesi uygulamayı durdurun veya bakım moduna alın.
 
 ```bash
 gcloud run services update-traffic kut-finans \
-  --region europe-west1 \
+  --region us-central1 \
   --to-revisions PREVIOUS_REVISION=100
 ```
 

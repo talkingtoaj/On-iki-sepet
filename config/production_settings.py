@@ -20,13 +20,16 @@ if database_url:
     import urllib.parse
 
     parsed = urllib.parse.urlparse(database_url)
+    # Cloud SQL unix-socket URLs carry the socket path as a `?host=` query
+    # param (dj_database_url convention) rather than in the netloc.
+    query_host = urllib.parse.parse_qs(parsed.query).get("host", [None])[0]
     DATABASES = {  # noqa: F405
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": parsed.path.lstrip("/"),
             "USER": parsed.username or "",
             "PASSWORD": parsed.password or "",
-            "HOST": parsed.hostname or "",
+            "HOST": query_host or parsed.hostname or "",
             "PORT": str(parsed.port or 5432),
         }
     }
