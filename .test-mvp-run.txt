@@ -1,0 +1,20 @@
+Creating test database for alias 'default'...
+......../home/sezermintaz/On-iki-sepet/.venv/lib/python3.13/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /home/sezermintaz/On-iki-sepet/staticfiles/
+  mw_instance = middleware(adapted_handler)
+............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 788 tests in 541.067s
+
+OK
+Destroying test database for alias 'default'...
+Found 788 test(s).
+System check identified no issues (0 silenced).
+Senkronize edilen profil sayısı: 1
+Zaten mevcut hesap sayısı: 8
+Zaten mevcut hesap sayısı: 8
+Zaten mevcut hesap sayısı: 8
+Zaten mevcut hesap sayısı: 8
+Zaten mevcut kategori sayısı: 8
+Zaten mevcut kategori sayısı: 8
+Zaten mevcut kategori sayısı: 8
+EXIT:0

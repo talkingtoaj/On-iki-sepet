@@ -56,7 +56,6 @@ class PermissionHardeningTests(TransactionTestMixin, TestCase):
             reverse("import_new"),
         ]
         self.viewer_read_only_urls = [
-            reverse("home"),
             reverse("report_dashboard"),
         ]
         self.data_entry_read_only_urls = [
@@ -186,6 +185,13 @@ class PermissionHardeningTests(TransactionTestMixin, TestCase):
         self._login(self.viewer_user)
 
         self._assert_urls_return_status(self.viewer_read_only_urls, 200)
+
+        response = self.client.get(reverse("home"))
+        self.assertRedirects(
+            response,
+            reverse("report_dashboard"),
+            fetch_redirect_response=False,
+        )
 
     def test_viewer_cannot_access_transaction_list(self):
         self._login(self.viewer_user)

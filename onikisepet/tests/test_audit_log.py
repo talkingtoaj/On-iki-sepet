@@ -22,7 +22,10 @@ class AuditLogTests(TransactionTestMixin, TestCase):
             account_purpose="cash",
             currency="TRY",
         )
-        self.income_category = self.create_category(name="Bağış", category_type="income")
+        self.income_category = self.create_category(
+            name="Audit Income Category",
+            category_type="income",
+        )
         self.transaction = self.create_transaction(
             transaction_type="income",
             amount=Decimal("100.00"),

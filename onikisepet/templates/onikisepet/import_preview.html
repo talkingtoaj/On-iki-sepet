@@ -1,5 +1,6 @@
 {% extends "onikisepet/base.html" %}
 {% load l10n %}
+{% load import_tags %}
 
 {% block title %}Ekstre Önizleme | KUT Finans{% endblock %}
 
@@ -7,114 +8,212 @@
     <section class="content-panel">
         <header class="page-header">
             <p class="eyebrow">Banka ekstresi</p>
-            <h1>Önizleme</h1>
+            <h1>Sınıflandır</h1>
         </header>
-        <p>Dosya: <strong>{{ bank_import.original_filename }}</strong></p>
+
+        {% include "onikisepet/includes/import_wizard_steps.html" %}
+
+        <p class="import-file">
+            Dosya: <strong>{{ bank_import.original_filename }}</strong>
+        </p>
+
+        {% if error_count %}
+            <div class="import-alert import-alert--rows" role="alert">
+                <p class="import-alert__message">
+                    {{ error_count }} satır düzeltilmeli
+                </p>
+                <p class="text-muted">
+                    Hatalı satırlar üstte kırmızı gösterilir. CSV’yi düzeltip yeniden yükleyin
+                    veya satırı atlayın.
+                </p>
+            </div>
+        {% endif %}
+
+        <div class="import-summary" aria-live="polite">
+            {% if ready_count %}
+                <span class="import-chip import-chip--ready">{{ ready_count }} hazır</span>
+            {% endif %}
+            {% if pending_count %}
+                <span class="import-chip import-chip--pending">{{ pending_count }} bekliyor</span>
+            {% endif %}
+            {% if error_count %}
+                <span class="import-chip import-chip--error">{{ error_count }} hatalı</span>
+            {% endif %}
+            {% if imported_count %}
+                <span class="import-chip import-chip--saved">{{ imported_count }} kaydedildi</span>
+            {% endif %}
+        </div>
+
+        <nav class="import-filters" aria-label="Satır filtresi">
+            <a
+                class="import-filter{% if preview_filter == 'all' %} is-active{% endif %}"
+                href="?filter=all"
+            >Tümü</a>
+            <a
+                class="import-filter{% if preview_filter == 'pending' %} is-active{% endif %}"
+                href="?filter=pending"
+            >Bekliyor{% if pending_count %} ({{ pending_count }}){% endif %}</a>
+            <a
+                class="import-filter{% if preview_filter == 'ready' %} is-active{% endif %}"
+                href="?filter=ready"
+            >Hazır{% if ready_count %} ({{ ready_count }}){% endif %}</a>
+            <a
+                class="import-filter{% if preview_filter == 'error' %} is-active{% endif %}"
+                href="?filter=error"
+            >Hatalı{% if error_count %} ({{ error_count }}){% endif %}</a>
+            <a
+                class="import-filter{% if preview_filter == 'saved' %} is-active{% endif %}"
+                href="?filter=saved"
+            >Kaydedildi{% if imported_count %} ({{ imported_count }}){% endif %}</a>
+        </nav>
+
+        <p class="text-muted import-lead">
+            İstediğiniz satırları doldurun; kalanları boş bırakıp daha sonra tamamlayabilirsiniz.
+        </p>
+
+        {% if imported_rows %}
+            {% if preview_filter == 'all' or preview_filter == 'saved' %}
+            <details class="import-saved" {% if preview_filter == 'saved' %}open{% endif %}>
+                <summary>{{ imported_count }} kaydedilmiş satır</summary>
+                {% localize off %}
+                <div class="import-cards import-cards--saved">
+                    {% for row in imported_rows %}
+                        <article class="import-card import-card--saved">
+                            <div class="import-card__header">
+                                <span class="import-card__num">#{{ row.row_number }}</span>
+                                <div class="import-card__main">
+                                    <strong>{{ row.date|default:"-" }}</strong>
+                                    <span>{{ row.description|default:"-" }}</span>
+                                    <span class="import-card__account">{{ row.account|default:"-" }}</span>
+                                </div>
+                                <div class="import-card__amount">
+                                    {{ row.amount|default:"-" }} {{ row.currency }}
+                                </div>
+                            </div>
+                            <p class="import-card__status">
+                                Kaydedildi · {{ row.get_transaction_type_display|default:"-" }}
+                            </p>
+                        </article>
+                    {% endfor %}
+                </div>
+                {% endlocalize %}
+            </details>
+            {% endif %}
+        {% endif %}
 
         {% if read_only %}
-            <p class="text-muted">Salt okunur önizleme — sınıflandırma yalnızca yükleyen tarafından düzenlenebilir.</p>
+            <p class="text-muted">Salt okunur — sınıflandırmayı yalnızca yükleyen düzenleyebilir.</p>
             {% localize off %}
-
-            <div class="import-table-wrapper section">
-                <table class="import-table data-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Tarih</th>
-                            <th>Açıklama</th>
-                            <th>Tutar</th>
-                            <th>Para birimi</th>
-                            <th>Hesap</th>
-                            <th>Tür</th>
-                            <th>Kategori</th>
-                            <th>Hedef hesap</th>
-                            <th>Ödeyen/Alıcı</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in rows %}
-                            <tr>
-                                <td>{{ row.row_number }}</td>
-                                <td>{{ row.date|default:"-" }}</td>
-                                <td>{{ row.description|default:"-" }}</td>
-                                <td>{{ row.amount|default:"-" }}</td>
-                                <td>{{ row.currency|default:"-" }}</td>
-                                <td>{{ row.account|default:"-" }}</td>
-                                <td>
+            <div class="import-cards section">
+                {% for row in rows %}
+                    {% with status=row|workflow_status %}
+                        {% if status != 'saved' %}
+                            <article
+                                class="import-card import-card--{{ status }}{% if preview_filter != 'all' %}{% if preview_filter == 'pending' %}{% if status != 'pending' and status != 'skipped' %} is-filter-hidden{% endif %}{% elif preview_filter != status %} is-filter-hidden{% endif %}{% endif %}"
+                                data-status="{{ status }}"
+                            >
+                                <div class="import-card__header">
+                                    <span class="import-card__num">#{{ row.row_number }}</span>
+                                    <div class="import-card__main">
+                                        <strong>{{ row.date|default:"-" }}</strong>
+                                        <span>{{ row.description|default:"-" }}</span>
+                                        <span class="import-card__account">{{ row.account|default:"-" }}</span>
+                                    </div>
+                                    <div class="import-card__amount">
+                                        {{ row.amount|default:"-" }} {{ row.currency }}
+                                    </div>
+                                </div>
+                                <div class="import-card__body">
                                     {% if row.parse_error %}
-                                        <span class="parse-error">{{ row.parse_error }}</span>
+                                        <p class="parse-error">{{ row.parse_error }}</p>
                                     {% elif row.is_skipped %}
                                         Atlandı
                                     {% else %}
                                         {{ row.get_transaction_type_display|default:"-" }}
+                                        {% if row.category %} · {{ row.category }}{% endif %}
+                                        {% if row.target_account %} · → {{ row.target_account }}{% endif %}
                                     {% endif %}
-                                </td>
-                                <td>{{ row.category|default:"-" }}</td>
-                                <td>{{ row.target_account|default:"-" }}</td>
-                                <td>{{ row.payee|default:"-" }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                </div>
+                            </article>
+                        {% endif %}
+                    {% endwith %}
+                {% endfor %}
             </div>
             {% endlocalize %}
 
-            <div class="form-actions section">
+            <div class="form-actions import-actions import-actions--sticky section">
                 <a class="btn btn--primary" href="{% url 'import_confirm' bank_import.pk %}">Onay ekranına git</a>
-                <a class="btn btn--secondary" href="{% url 'import_list' %}">Ekstre listesine dön</a>
+                <a class="btn btn--secondary" href="{% url 'import_list' %}">Listeye dön</a>
             </div>
         {% else %}
-            <form method="post">
+            <form method="post" class="import-classify-form">
                 {% csrf_token %}
                 {{ formset.management_form }}
 
-                <div class="import-table-wrapper section">
-                    <table class="import-table data-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Tarih</th>
-                                <th>Açıklama</th>
-                                <th>Tutar</th>
-                                <th>Para birimi</th>
-                                <th>Hesap</th>
-                                <th>Sınıflandırma</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for form in formset %}
-                                {% with row=form.instance %}
-                                    <tr>
-                                        <td>{{ row.row_number }}</td>
-                                        <td>{{ row.date|default:"-" }}</td>
-                                        <td>{{ row.description|default:"-" }}</td>
-                                        <td>{{ row.amount|default:"-" }}</td>
-                                        <td>{{ row.currency|default:"-" }}</td>
-                                        <td>{{ row.account|default:"-" }}</td>
-                                        <td class="row-form">
-                                            {% if row.parse_error %}
-                                                <p class="parse-error">{{ row.parse_error }}</p>
-                                            {% else %}
-                                                {{ form.id }}
+                <div class="import-cards section">
+                    {% for form in formset %}
+                        {% with row=form.instance status=form.instance|workflow_status %}
+                            <article
+                                class="import-card import-card--{{ status }}{% if preview_filter != 'all' %}{% if preview_filter == 'pending' %}{% if status != 'pending' and status != 'skipped' %} is-filter-hidden{% endif %}{% elif preview_filter != status %} is-filter-hidden{% endif %}{% endif %}"
+                                data-status="{{ status }}"
+                            >
+                                <div class="import-card__header">
+                                    <span class="import-card__num">#{{ row.row_number }}</span>
+                                    <div class="import-card__main">
+                                        <strong>{{ row.date|default:"-" }}</strong>
+                                        <span>{{ row.description|default:"-" }}</span>
+                                        <span class="import-card__account">{{ row.account|default:"-" }}</span>
+                                    </div>
+                                    <div class="import-card__amount">
+                                        {{ row.amount|default:"-" }} {{ row.currency }}
+                                    </div>
+                                </div>
+                                <div class="import-card__body row-form">
+                                    {% if row.parse_error %}
+                                        <p class="parse-error">{{ row.parse_error }}</p>
+                                    {% else %}
+                                        {{ form.id }}
+                                        <div class="import-classify">
+                                            <label class="import-classify__field">
+                                                <span>{{ form.transaction_type.label }}</span>
                                                 {{ form.transaction_type }}
+                                            </label>
+                                            <label class="import-classify__field">
+                                                <span>{{ form.category.label }}</span>
                                                 {{ form.category }}
+                                            </label>
+                                            <label class="import-classify__field">
+                                                <span>{{ form.target_account.label }}</span>
                                                 {{ form.target_account }}
+                                            </label>
+                                            <label class="import-classify__field">
+                                                <span>{{ form.payee.label }}</span>
                                                 {{ form.payee }}
+                                            </label>
+                                            <label class="import-classify__skip">
                                                 {{ form.skip_row }}
-                                            {% endif %}
-                                            {% for error in form.non_field_errors %}
-                                                <p class="parse-error">{{ error }}</p>
-                                            {% endfor %}
-                                        </td>
-                                    </tr>
-                                {% endwith %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                                <span>{{ form.skip_row.label }}</span>
+                                            </label>
+                                        </div>
+                                    {% endif %}
+                                    {% for error in form.non_field_errors %}
+                                        <p class="parse-error">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            </article>
+                        {% endwith %}
+                    {% endfor %}
                 </div>
 
-                <div class="form-actions">
-                    <button class="btn btn--primary" type="submit">Sınıflandırmayı kaydet ve devam et</button>
+                <div class="form-actions import-actions import-actions--sticky">
+                    <button class="btn btn--primary" type="submit">
+                        {% if ready_count %}
+                            Hazır {{ ready_count }} satırla devam et
+                        {% else %}
+                            Kaydet ve devam et
+                        {% endif %}
+                    </button>
+                    <a class="btn btn--secondary" href="{% url 'import_list' %}">Daha sonra</a>
                 </div>
             </form>
         {% endif %}

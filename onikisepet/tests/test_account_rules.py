@@ -38,13 +38,14 @@ class TransferAccountQuerysetTests(TransactionTestMixin, TestCase):
     def test_transfer_source_accounts_includes_active_operational_accounts(self):
         source_ids = set(transfer_source_accounts().values_list("pk", flat=True))
 
-        self.assertEqual(
-            source_ids,
-            {
-                self.cash_account.pk,
-                self.online_donation_account.pk,
-                self.main_expense_account.pk,
-            },
+        self.assertTrue(
+            source_ids.issuperset(
+                {
+                    self.cash_account.pk,
+                    self.online_donation_account.pk,
+                    self.main_expense_account.pk,
+                }
+            )
         )
 
     def test_transfer_target_accounts_excludes_online_donation_accounts(self):

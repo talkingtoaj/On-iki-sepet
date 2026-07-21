@@ -26,6 +26,7 @@ from .views import (
     import_list,
     import_new,
     import_preview,
+    import_sample_csv,
     online_donation_income_create,
     receipt_download,
     record_type_guide,
@@ -109,6 +110,11 @@ urlpatterns = [
         "imports/new/",
         import_new,
         name="import_new",
+    ),
+    path(
+        "imports/sample.csv",
+        import_sample_csv,
+        name="import_sample_csv",
     ),
     path(
         "imports/<int:pk>/preview/",

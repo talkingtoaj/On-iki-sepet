@@ -6,24 +6,48 @@
     <section class="content-panel">
         <header class="page-header">
             <p class="eyebrow">Banka ekstresi</p>
-            <h1>CSV / Excel / PDF Yükle</h1>
-            <p class="text-muted">
-                CSV veya Excel dosyalarında şu sütunlar bulunmalıdır:
-                <strong>date</strong>, <strong>description</strong>,
-                <strong>amount</strong>, <strong>currency</strong>, <strong>account</strong>.
-            </p>
-            <p class="text-muted">
-                PDF ekstreler (Enpara vb.) için <strong>hesap seçin</strong>.
-                Dosyada <strong>Tarih</strong>, <strong>Hareket tipi</strong>,
-                <strong>Açıklama</strong> ve <strong>İşlem Tutarı</strong> sütunları okunur.
-            </p>
+            <h1>Ekstre yükle</h1>
         </header>
+
+        {% include "onikisepet/includes/import_wizard_steps.html" %}
+
+        <p class="text-muted import-lead">
+            CSV / Excel veya PDF banka ekstresi yükleyin. Sonraki adımda satırları
+            sınıflandırıp istediğiniz kadarını onaylayabilirsiniz.
+        </p>
+
+        {% if form.non_field_errors %}
+            <div class="import-alert" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p class="import-alert__message">{{ error }}</p>
+                {% endfor %}
+                <ul class="import-alert__help">
+                    <li>{{ upload_help_pdf }}</li>
+                    <li>
+                        {{ upload_help_csv }}
+                        <a href="{% url 'import_sample_csv' %}">Örnek CSV indir</a>
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
+
+        <ul class="import-hints">
+            <li>
+                <strong>CSV / Excel:</strong>
+                date, description, amount, currency, account sütunları —
+                <a href="{% url 'import_sample_csv' %}">Örnek CSV indir</a>
+            </li>
+            <li>
+                <strong>PDF:</strong>
+                hesabı seçin; Tarih, Hareket tipi, Açıklama, İşlem Tutarı okunur
+            </li>
+        </ul>
 
         <form class="form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            {% include "onikisepet/includes/form_fields.html" %}
+            {% include "onikisepet/includes/form_fields.html" with hide_non_field_errors=True %}
             <div class="form-actions">
-                <button class="btn btn--primary" type="submit">Yükle ve önizle</button>
+                <button class="btn btn--primary" type="submit">Yükle ve devam et</button>
                 <a class="btn btn--secondary" href="{% url 'transaction_list' %}">İptal</a>
             </div>
         </form>

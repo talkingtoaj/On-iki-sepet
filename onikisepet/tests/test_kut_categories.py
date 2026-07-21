@@ -24,23 +24,16 @@ class KutCategoriesTests(TestCase):
         self.assertGreater(expense_count, 0)
         self.assertEqual(len(KUT_CATEGORIES), income_count + expense_count)
 
-    def test_load_kut_categories_creates_all_categories_on_first_run(self):
-        created_count = load_kut_categories()
-
-        self.assertEqual(created_count, len(KUT_CATEGORIES))
+    def test_seed_migration_loads_kut_categories_in_test_database(self):
         self.assertEqual(Category.objects.count(), len(KUT_CATEGORIES))
 
-    def test_load_kut_categories_is_idempotent(self):
-        load_kut_categories()
-
+    def test_load_kut_categories_is_idempotent_after_seed(self):
         created_count = load_kut_categories()
 
         self.assertEqual(created_count, 0)
         self.assertEqual(Category.objects.count(), len(KUT_CATEGORIES))
 
     def test_load_kut_categories_sets_expected_fields(self):
-        load_kut_categories()
-
         for spec in KUT_CATEGORIES:
             with self.subTest(name=spec["name"]):
                 category = Category.objects.get(name=spec["name"])
@@ -48,8 +41,6 @@ class KutCategoriesTests(TestCase):
                 self.assertTrue(category.is_active)
 
     def test_load_kut_categories_creates_expected_income_categories(self):
-        load_kut_categories()
-
         self.assertTrue(
             Category.objects.filter(
                 name="Bağış",
@@ -64,8 +55,6 @@ class KutCategoriesTests(TestCase):
         )
 
     def test_load_kut_categories_creates_expected_expense_categories(self):
-        load_kut_categories()
-
         self.assertTrue(
             Category.objects.filter(
                 name="Kira",
@@ -80,6 +69,7 @@ class KutCategoriesTests(TestCase):
         )
 
     def test_load_kut_categories_does_not_overwrite_existing_category_fields(self):
+        Category.objects.all().delete()
         Category.objects.create(
             name="Bağış",
             category_type=Category.CategoryType.EXPENSE,
@@ -95,14 +85,14 @@ class KutCategoriesTests(TestCase):
 
 
 class LoadKutCategoriesCommandTests(TestCase):
-    def test_command_creates_categories_and_reports_created_count(self):
+    def test_command_reports_seed_categories_when_already_loaded(self):
+        self.assertEqual(Category.objects.count(), len(KUT_CATEGORIES))
         stdout = StringIO()
 
         call_command("load_kut_categories", stdout=stdout)
 
-        self.assertEqual(Category.objects.count(), len(KUT_CATEGORIES))
         self.assertIn(
-            f"Oluşturulan kategori sayısı: {len(KUT_CATEGORIES)}",
+            f"Zaten mevcut kategori sayısı: {len(KUT_CATEGORIES)}",
             stdout.getvalue(),
         )
 

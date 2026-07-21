@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from onikisepet.usecases import financial_calculations, report_periods
 
@@ -77,7 +78,10 @@ class ReportDashboardPeriodViewTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.report_url = reverse("report_dashboard")
         self.viewer = self.create_user("report_period_viewer", group_name="Viewer")
-        self.income_category = self.create_category(name="Bağış", category_type="income")
+        self.income_category = self.create_category(
+            name="Report Period Income",
+            category_type="income",
+        )
         self.cash = self.create_account(
             name="Cash Period",
             account_type="cash",
@@ -86,12 +90,14 @@ class ReportDashboardPeriodViewTests(TransactionTestMixin, TestCase):
         )
 
     def test_this_month_preset_filters_report(self):
+        today = timezone.localdate()
+        last_month = today.replace(day=1) - timedelta(days=1)
         self.create_transaction(
             transaction_type="income",
             amount=Decimal("300.00"),
             target_account=self.cash,
             category=self.income_category,
-            date="2026-06-10",
+            date=today.isoformat(),
             created_by=self.viewer,
         )
         self.create_transaction(
@@ -99,7 +105,7 @@ class ReportDashboardPeriodViewTests(TransactionTestMixin, TestCase):
             amount=Decimal("900.00"),
             target_account=self.cash,
             category=self.income_category,
-            date="2026-05-10",
+            date=last_month.isoformat(),
             created_by=self.viewer,
         )
         self.client.login(username=self.viewer.username, password=self.password)

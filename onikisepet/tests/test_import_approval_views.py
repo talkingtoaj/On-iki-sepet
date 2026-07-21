@@ -61,6 +61,8 @@ class ImportApprovalListUiTests(ProfileTestMixin, TransactionTestMixin, TestCase
             response,
             reverse("import_confirm", kwargs={"pk": bank_import.pk}),
         )
+        self.assertContains(response, "Sınıflandır")
+        self.assertContains(response, "Onayla")
 
     def test_data_entry_cannot_confirm_import(self):
         bank_import = self._create_ready_import(uploaded_by=self.data_entry_user)

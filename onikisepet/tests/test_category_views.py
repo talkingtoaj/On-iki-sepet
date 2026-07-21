@@ -5,7 +5,7 @@ from django.shortcuts import resolve_url
 from django.test import TestCase
 from django.urls import reverse
 
-from .helpers import CategoryTestMixin
+from .helpers import CategoryTestMixin, SEED_CATEGORY_COUNT
 
 
 class CategoryViewTests(CategoryTestMixin, TestCase):
@@ -99,7 +99,10 @@ class CategoryViewTests(CategoryTestMixin, TestCase):
 
         response = self.client.post(self.category_create_url, data=payload)
 
-        self.assertEqual(self.get_category_model().objects.count(), 1)
+        self.assertEqual(
+            self.get_category_model().objects.count(),
+            SEED_CATEGORY_COUNT + 1,
+        )
         self.assertRedirects(response, self.category_list_url)
 
     def test_admin_can_create_expense_category_with_post(self):
@@ -108,7 +111,10 @@ class CategoryViewTests(CategoryTestMixin, TestCase):
 
         response = self.client.post(self.category_create_url, data=payload)
 
-        self.assertEqual(self.get_category_model().objects.count(), 1)
+        self.assertEqual(
+            self.get_category_model().objects.count(),
+            SEED_CATEGORY_COUNT + 1,
+        )
         self.assertRedirects(response, self.category_list_url)
 
     def test_after_successful_creation_user_is_redirected_to_category_list(self):
@@ -131,9 +137,10 @@ class CategoryViewTests(CategoryTestMixin, TestCase):
         self.assertContains(response, "Hospitality")
 
     def test_category_list_displays_empty_message_when_there_are_no_categories(self):
+        self.get_category_model().objects.all().delete()
         self.client.login(username=self.admin_user.username, password=self.password)
 
         response = self.client.get(self.category_list_url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No categories found.")
+        self.assertContains(response, "Henüz kategori bulunamadı.")

@@ -7,7 +7,7 @@ from django.shortcuts import resolve_url
 from django.test import TestCase
 from django.urls import reverse
 
-from .helpers import AccountTestMixin, TransactionTestMixin
+from .helpers import AccountTestMixin, SEED_ACCOUNT_COUNT, TransactionTestMixin
 
 
 class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
@@ -109,7 +109,10 @@ class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
 
         response = self.client.post(self.account_create_url, data=payload)
 
-        self.assertEqual(self.get_account_model().objects.count(), 1)
+        self.assertEqual(
+            self.get_account_model().objects.count(),
+            SEED_ACCOUNT_COUNT + 1,
+        )
         self.assertTrue(
             self.get_account_model().objects.filter(
                 name="Cash Account",
@@ -131,7 +134,10 @@ class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
 
         response = self.client.post(self.account_create_url, data=payload)
 
-        self.assertEqual(self.get_account_model().objects.count(), 1)
+        self.assertEqual(
+            self.get_account_model().objects.count(),
+            SEED_ACCOUNT_COUNT + 1,
+        )
         self.assertTrue(
             self.get_account_model().objects.filter(
                 name="Online Donation Bank Account",
@@ -153,7 +159,10 @@ class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
 
         response = self.client.post(self.account_create_url, data=payload)
 
-        self.assertEqual(self.get_account_model().objects.count(), 1)
+        self.assertEqual(
+            self.get_account_model().objects.count(),
+            SEED_ACCOUNT_COUNT + 1,
+        )
         self.assertTrue(
             self.get_account_model().objects.filter(
                 name="Main Expense Bank Account",
@@ -175,7 +184,10 @@ class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
 
         response = self.client.post(self.account_create_url, data=payload)
 
-        self.assertEqual(self.get_account_model().objects.count(), 1)
+        self.assertEqual(
+            self.get_account_model().objects.count(),
+            SEED_ACCOUNT_COUNT + 1,
+        )
         self.assertTrue(
             self.get_account_model().objects.filter(
                 name="USD Account",
@@ -197,7 +209,10 @@ class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
 
         response = self.client.post(self.account_create_url, data=payload)
 
-        self.assertEqual(self.get_account_model().objects.count(), 1)
+        self.assertEqual(
+            self.get_account_model().objects.count(),
+            SEED_ACCOUNT_COUNT + 1,
+        )
         self.assertTrue(
             self.get_account_model().objects.filter(
                 name="Savings Account",
@@ -288,9 +303,10 @@ class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
         self.assertContains(response, "1250.00 TRY")
 
     def test_account_list_displays_empty_message_when_there_are_no_accounts(self):
+        self.get_account_model().objects.all().delete()
         self.client.login(username=self.data_entry_user.username, password=self.password)
 
         response = self.client.get(self.account_list_url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No accounts found.")
+        self.assertContains(response, "Henüz hesap bulunamadı.")

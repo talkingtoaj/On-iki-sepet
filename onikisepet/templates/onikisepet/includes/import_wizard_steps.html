@@ -1,0 +1,16 @@
+<nav class="import-wizard" aria-label="Ekstre adımları">
+    <ol class="import-wizard__steps">
+        <li class="import-wizard__step{% if import_wizard_step == 'upload' %} is-current{% elif import_wizard_step != 'upload' %} is-done{% endif %}">
+            <span class="import-wizard__index">1</span>
+            <span class="import-wizard__label">Yükle</span>
+        </li>
+        <li class="import-wizard__step{% if import_wizard_step == 'preview' %} is-current{% elif import_wizard_step == 'confirm' %} is-done{% endif %}">
+            <span class="import-wizard__index">2</span>
+            <span class="import-wizard__label">Sınıflandır</span>
+        </li>
+        <li class="import-wizard__step{% if import_wizard_step == 'confirm' %} is-current{% endif %}">
+            <span class="import-wizard__index">3</span>
+            <span class="import-wizard__label">Onayla</span>
+        </li>
+    </ol>
+</nav>

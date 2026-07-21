@@ -5,7 +5,13 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.forms import modelformset_factory
-from django.http import FileResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
+from django.http import (
+    FileResponse,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -60,6 +66,7 @@ from .permissions import (
     is_viewer,
 )
 from .selectors import (
+    active_accounts,
     approved_transactions,
     pending_account_change_requests,
     pending_bank_imports,
@@ -789,24 +796,67 @@ def import_new(request):
     if not can_create_transactions(request.user):
         return HttpResponseForbidden(msg.PERMISSION_IMPORT_BANK_STATEMENTS)
 
+    form = BankStatementUploadForm()
     if request.method == "POST":
         form = BankStatementUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            bank_import = bank_import_ops.create_import_from_upload(
-                form.cleaned_data["file"],
-                request.user,
-                default_account=form.cleaned_data.get("default_account"),
-            )
-            messages.success(request, "Ekstre yüklendi.")
-            return redirect("import_preview", pk=bank_import.pk)
-    else:
-        form = BankStatementUploadForm()
+            try:
+                bank_import = bank_import_ops.create_import_from_upload(
+                    form.cleaned_data["file"],
+                    request.user,
+                    default_account=form.cleaned_data.get("default_account"),
+                )
+            except ValidationError as exc:
+                for message in exc.messages:
+                    form.add_error(None, message)
+            else:
+                messages.success(request, "Ekstre yüklendi.")
+                return redirect("import_preview", pk=bank_import.pk)
 
     return render(
         request,
         "onikisepet/import_upload.html",
-        {"form": form},
+        {
+            "form": form,
+            "import_wizard_step": "upload",
+            "upload_help_csv": msg.BANK_IMPORT_UPLOAD_HELP_CSV,
+            "upload_help_pdf": msg.BANK_IMPORT_UPLOAD_HELP_PDF,
+        },
     )
+
+
+@application_access_required
+@require_GET
+def import_sample_csv(request):
+    if not can_create_transactions(request.user):
+        return HttpResponseForbidden(msg.PERMISSION_IMPORT_BANK_STATEMENTS)
+
+    sample_account = (
+        active_accounts(account_type=Account.AccountType.BANK)
+        .order_by("name")
+        .first()
+    )
+    account_name = (
+        sample_account.name
+        if sample_account is not None
+        else bank_import_ops.SAMPLE_CSV_ACCOUNT_FALLBACK
+    )
+    content = bank_import_ops.build_sample_csv_content(account_name=account_name)
+    response = HttpResponse(content, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = (
+        f'attachment; filename="{bank_import_ops.SAMPLE_CSV_FILENAME}"'
+    )
+    return response
+
+
+IMPORT_PREVIEW_FILTERS = ("all", "pending", "ready", "error", "saved")
+
+
+def _preview_filter_from_request(request):
+    filter_name = request.GET.get("filter", "all")
+    if filter_name not in IMPORT_PREVIEW_FILTERS:
+        return "all"
+    return filter_name
 
 
 @application_access_required
@@ -828,22 +878,50 @@ def import_preview(request, pk):
 
     queryset = bank_import.rows.select_related("account", "category", "target_account")
     read_only = not can_edit_bank_import_preview(request.user, bank_import)
+    all_rows = bank_import_ops.order_rows_for_preview(list(queryset))
+    imported_rows = [row for row in all_rows if row.transaction_id]
+    editable_rows = [row for row in all_rows if not row.transaction_id]
+    ready_count = sum(
+        1 for row in editable_rows if bank_import_ops.is_row_ready_to_import(row)
+    )
+    pending_count = bank_import_ops.count_pending_rows(all_rows)
+    error_count = bank_import_ops.count_error_rows(all_rows)
+    preview_filter = _preview_filter_from_request(request)
+
+    preview_context = {
+        "bank_import": bank_import,
+        "imported_rows": imported_rows,
+        "ready_count": ready_count,
+        "pending_count": pending_count,
+        "error_count": error_count,
+        "imported_count": len(imported_rows),
+        "preview_filter": preview_filter,
+        "import_wizard_step": "preview",
+    }
 
     if read_only:
         return render(
             request,
             "onikisepet/import_preview.html",
             {
-                "bank_import": bank_import,
-                "rows": queryset.order_by("row_number"),
+                **preview_context,
+                "rows": all_rows,
                 "read_only": True,
             },
         )
 
+    editable_ids = [row.pk for row in editable_rows]
     formset = BankStatementRowFormSet(
-        queryset=queryset,
+        queryset=queryset.filter(pk__in=editable_ids),
         data=request.POST or None,
     )
+    if not request.POST:
+        form_by_id = {form.instance.pk: form for form in formset}
+        formset.forms = [
+            form_by_id[row.pk]
+            for row in editable_rows
+            if row.pk in form_by_id
+        ]
 
     if request.method == "POST" and formset.is_valid():
         formset.save()
@@ -854,7 +932,7 @@ def import_preview(request, pk):
         request,
         "onikisepet/import_preview.html",
         {
-            "bank_import": bank_import,
+            **preview_context,
             "formset": formset,
             "read_only": False,
         },
@@ -874,19 +952,35 @@ def import_confirm(request, pk):
     if bank_import.status == BankStatementImport.Status.CONFIRMED:
         return redirect("transaction_list")
 
-    rows = bank_import.rows.select_related(
-        "account",
-        "category",
-        "target_account",
-    ).order_by("row_number")
-    importable_rows = [row for row in rows if not row.is_skipped and not row.parse_error]
+    rows = list(
+        bank_import.rows.select_related(
+            "account",
+            "category",
+            "target_account",
+            "transaction",
+        ).order_by("row_number")
+    )
+    ready_rows = [row for row in rows if bank_import_ops.is_row_ready_to_import(row)]
+    pending_count = bank_import_ops.count_pending_rows(rows)
+    imported_count = sum(1 for row in rows if row.transaction_id)
+    other_rows = [row for row in rows if row not in ready_rows]
+
+    confirm_context = {
+        "bank_import": bank_import,
+        "rows": rows,
+        "ready_rows": ready_rows,
+        "other_rows": other_rows,
+        "pending_count": pending_count,
+        "imported_count": imported_count,
+        "import_wizard_step": "confirm",
+    }
 
     if request.method == "POST":
         if not can_confirm_bank_import(request.user):
             return HttpResponseForbidden(msg.PERMISSION_CONFIRM_BANK_IMPORT)
 
         try:
-            bank_import_ops.confirm_import(bank_import, request.user)
+            result = bank_import_ops.confirm_import(bank_import, request.user)
         except ValidationError as exc:
             errors = list(exc.messages)
             messages.error(request, "Ekstre kaydedilemedi. Lütfen hataları kontrol edin.")
@@ -895,23 +989,32 @@ def import_confirm(request, pk):
                 request,
                 "onikisepet/import_confirm.html",
                 {
-                    "bank_import": bank_import,
-                    "rows": rows,
-                    "importable_rows": importable_rows,
+                    **confirm_context,
                     "errors": errors,
                 },
             )
 
-        messages.success(request, "İşlemler içe aktarıldı.")
+        if result.pending_count:
+            messages.success(
+                request,
+                msg.bank_import_partial_success_message(
+                    result.imported_count,
+                    result.pending_count,
+                ),
+            )
+            return redirect("import_preview", pk=bank_import.pk)
+
+        messages.success(
+            request,
+            msg.bank_import_full_success_message(result.imported_count),
+        )
         return redirect("transaction_list")
 
     return render(
         request,
         "onikisepet/import_confirm.html",
         {
-            "bank_import": bank_import,
-            "rows": rows,
-            "importable_rows": importable_rows,
+            **confirm_context,
             "errors": [],
         },
     )

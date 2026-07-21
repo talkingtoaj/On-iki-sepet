@@ -10,6 +10,7 @@ from onikisepet.form_currency import (
     account_choice_label,
     build_transaction_form_currency_context,
 )
+from onikisepet.form_examples import build_transaction_form_example
 from onikisepet.forms import CashIncomeForm, TransferForm
 from onikisepet.usecases.transaction_feedback import (
     TRANSACTION_CREATED_APPROVED,

@@ -17,6 +17,7 @@
                             <th scope="col">Dosya</th>
                             <th scope="col">Yükleyen</th>
                             <th scope="col">Tarih</th>
+                            <th scope="col">Kalan satır</th>
                             <th scope="col">İşlem</th>
                         </tr>
                     </thead>
@@ -26,10 +27,10 @@
                                 <td>{{ bank_import.original_filename }}</td>
                                 <td>{{ bank_import.uploaded_by.username }}</td>
                                 <td>{{ bank_import.uploaded_at|date:"Y-m-d H:i" }}</td>
-                                <td>
-                                    <a href="{% url 'import_preview' bank_import.pk %}">Önizle</a>
-                                    ·
-                                    <a href="{% url 'import_confirm' bank_import.pk %}">Onayla</a>
+                                <td>{{ bank_import.importable_row_count }}</td>
+                                <td class="import-list-actions">
+                                    <a class="btn btn--secondary btn--sm" href="{% url 'import_preview' bank_import.pk %}">Sınıflandır</a>
+                                    <a class="btn btn--primary btn--sm" href="{% url 'import_confirm' bank_import.pk %}">Onayla</a>
                                 </td>
                             </tr>
                         {% endfor %}

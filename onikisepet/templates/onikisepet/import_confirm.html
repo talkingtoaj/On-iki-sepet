@@ -1,105 +1,149 @@
 {% extends "onikisepet/base.html" %}
+{% load l10n %}
 
-{% block title %}Ekstre Onayı | On İki Sepet{% endblock %}
-
-{% block extra_css %}
-    <style>
-        .import-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-family: "Trebuchet MS", Verdana, sans-serif;
-            font-size: 0.9rem;
-        }
-
-        .import-table th,
-        .import-table td {
-            border: 1px solid rgba(217, 207, 188, 0.9);
-            padding: 10px;
-            vertical-align: top;
-            text-align: left;
-        }
-
-        .import-table th {
-            background: rgba(23, 63, 53, 0.08);
-        }
-
-        .error-list {
-            color: #8b1e1e;
-            font-family: "Trebuchet MS", Verdana, sans-serif;
-            font-weight: 700;
-        }
-    </style>
-{% endblock %}
+{% block title %}Ekstre Onayı | KUT Finans{% endblock %}
 
 {% block content %}
     <section class="content-panel">
-        <p class="eyebrow">Banka ekstresi</p>
-        <h1>Kaydı Onayla</h1>
-        <p>Dosya: <strong>{{ bank_import.original_filename }}</strong></p>
-        <p>Kaydedilecek satır sayısı: <strong>{{ importable_rows|length }}</strong></p>
+        <header class="page-header">
+            <p class="eyebrow">Banka ekstresi</p>
+            <h1>Onayla</h1>
+        </header>
+
+        {% include "onikisepet/includes/import_wizard_steps.html" %}
+
+        <p class="import-file">
+            Dosya: <strong>{{ bank_import.original_filename }}</strong>
+        </p>
+
+        <div class="import-summary" aria-live="polite">
+            <span class="import-chip import-chip--ready">
+                {{ ready_rows|length }} şimdi kaydedilecek
+            </span>
+            {% if pending_count %}
+                <span class="import-chip import-chip--pending">{{ pending_count }} sonra</span>
+            {% endif %}
+            {% if imported_count %}
+                <span class="import-chip import-chip--saved">{{ imported_count }} daha önce kaydedildi</span>
+            {% endif %}
+        </div>
+
+        {% if pending_count %}
+            <p class="text-muted import-lead">
+                Sınıflandırılmamış satırlar bu ekstrede kalır; istediğiniz zaman tamamlayabilirsiniz.
+            </p>
+        {% endif %}
 
         {% if errors %}
-            <ul class="error-list">
+            <ul class="import-error-list">
                 {% for error in errors %}
                     <li>{{ error }}</li>
                 {% endfor %}
             </ul>
         {% endif %}
 
-        <table class="import-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Tarih</th>
-                    <th>Açıklama</th>
-                    <th>Tutar</th>
-                    <th>Tür</th>
-                    <th>Hesap</th>
-                    <th>Kategori / Hedef</th>
-                    <th>Durum</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in rows %}
-                    <tr>
-                        <td>{{ row.row_number }}</td>
-                        <td>{{ row.date|default:"-" }}</td>
-                        <td>{{ row.description|default:"-" }}</td>
-                        <td>{{ row.amount|default:"-" }} {{ row.currency }}</td>
-                        <td>{{ row.get_transaction_type_display|default:"-" }}</td>
-                        <td>{{ row.account|default:"-" }}</td>
-                        <td>
-                            {% if row.category %}
-                                {{ row.category }}
-                            {% elif row.target_account %}
-                                → {{ row.target_account }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if row.parse_error %}
-                                Hatalı
-                            {% elif row.is_skipped %}
-                                Atlandı
-                            {% else %}
-                                Kaydedilecek
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% localize off %}
+        {% if ready_rows %}
+            <h2 class="section-title">Şimdi kaydedilecekler</h2>
+            <div class="import-table-wrapper">
+                <table class="import-table data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tarih</th>
+                            <th>Açıklama</th>
+                            <th>Tutar</th>
+                            <th>Tür</th>
+                            <th>Hesap</th>
+                            <th>Kategori / hedef</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in ready_rows %}
+                            <tr class="import-row--ready">
+                                <td>{{ row.row_number }}</td>
+                                <td>{{ row.date|default:"-" }}</td>
+                                <td>{{ row.description|default:"-" }}</td>
+                                <td>{{ row.amount|default:"-" }} {{ row.currency }}</td>
+                                <td>{{ row.get_transaction_type_display|default:"-" }}</td>
+                                <td>{{ row.account|default:"-" }}</td>
+                                <td>
+                                    {% if row.category %}
+                                        {{ row.category }}
+                                    {% elif row.target_account %}
+                                        → {{ row.target_account }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
 
-        <form method="post" style="margin-top: 20px;">
+        {% if other_rows %}
+            <details class="import-saved" {% if not ready_rows %}open{% endif %}>
+                <summary>Diğer satırlar ({{ other_rows|length }})</summary>
+                <div class="import-table-wrapper">
+                    <table class="import-table data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tarih</th>
+                                <th>Açıklama</th>
+                                <th>Tutar</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in other_rows %}
+                                <tr>
+                                    <td>{{ row.row_number }}</td>
+                                    <td>{{ row.date|default:"-" }}</td>
+                                    <td>{{ row.description|default:"-" }}</td>
+                                    <td>{{ row.amount|default:"-" }} {{ row.currency }}</td>
+                                    <td>
+                                        {% if row.transaction_id %}
+                                            Kaydedildi
+                                        {% elif row.parse_error %}
+                                            Hatalı
+                                        {% elif row.is_skipped %}
+                                            Atlandı
+                                        {% else %}
+                                            Bekliyor
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        {% endif %}
+        {% endlocalize %}
+
+        <form method="post" class="import-actions">
             {% csrf_token %}
-            {% if can_approve_transactions %}
-                <button class="button" type="submit">İşlemleri kaydet</button>
-            {% else %}
-                <p>Onay için yetkili bir kullanıcının bu ekstreyi kaydetmesi gerekir.</p>
-            {% endif %}
-            <a class="secondary-link" href="{% url 'import_preview' bank_import.pk %}">Geri dön</a>
+            <div class="form-actions">
+                {% if can_approve_transactions %}
+                    {% if ready_rows %}
+                        <button class="btn btn--primary" type="submit">
+                            {% if pending_count %}
+                                Hazır {{ ready_rows|length }} satırı kaydet
+                            {% else %}
+                                {{ ready_rows|length }} işlemi kaydet
+                            {% endif %}
+                        </button>
+                    {% else %}
+                        <p class="text-muted">Kaydedilecek hazır satır yok. Sınıflandırmaya dönün.</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">Onay için yetkili bir kullanıcının bu ekstreyi kaydetmesi gerekir.</p>
+                {% endif %}
+                <a class="btn btn--secondary" href="{% url 'import_preview' bank_import.pk %}">Geri dön</a>
+            </div>
         </form>
     </section>
 {% endblock %}

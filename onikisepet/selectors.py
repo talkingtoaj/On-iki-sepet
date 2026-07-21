@@ -40,7 +40,11 @@ def pending_bank_imports():
         .annotate(
             importable_row_count=Count(
                 "rows",
-                filter=Q(rows__is_skipped=False, rows__parse_error=""),
+                filter=Q(
+                    rows__is_skipped=False,
+                    rows__parse_error="",
+                    rows__transaction__isnull=True,
+                ),
             ),
         )
         .filter(importable_row_count__gt=0)

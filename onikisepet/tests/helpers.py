@@ -11,6 +11,11 @@ from onikisepet.usecases.profile_sync import sync_user_profile_from_groups
 from django.db.models import Model
 
 from onikisepet.models import Category
+from onikisepet.kut_accounts import KUT_ACCOUNTS
+from onikisepet.kut_categories import KUT_CATEGORIES
+
+SEED_ACCOUNT_COUNT = len(KUT_ACCOUNTS)
+SEED_CATEGORY_COUNT = len(KUT_CATEGORIES)
 
 
 class CategoryTestMixin:

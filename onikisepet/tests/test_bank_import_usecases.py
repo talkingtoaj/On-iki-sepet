@@ -198,9 +198,169 @@ class BankImportUsecaseTests(TransactionTestMixin, TestCase):
 
         self.assertEqual(self.get_transaction_model().objects.count(), 1)
 
+    def test_confirm_import_saves_ready_rows_and_leaves_incomplete(self):
+        bank_import = BankStatementImport.objects.create(
+            uploaded_by=self.user,
+            original_filename="partial.csv",
+            status=BankStatementImport.Status.PREVIEW,
+        )
+        BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=1,
+            date="2026-06-01",
+            description="Ready expense",
+            amount=Decimal("100.00"),
+            currency="TRY",
+            account=self.bank_account,
+            transaction_type="expense",
+            category=self.expense_category,
+        )
+        BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=2,
+            date="2026-06-02",
+            description="Later",
+            amount=Decimal("50.00"),
+            currency="TRY",
+            account=self.bank_account,
+        )
+
+        result = bank_import_ops.confirm_import(bank_import, self.user)
+
+        bank_import.refresh_from_db()
+        self.assertEqual(result.imported_count, 1)
+        self.assertEqual(result.pending_count, 1)
+        self.assertEqual(bank_import.status, BankStatementImport.Status.PREVIEW)
+        self.assertEqual(self.get_transaction_model().objects.count(), 1)
+        self.assertIsNotNone(bank_import.rows.get(row_number=1).transaction_id)
+        self.assertIsNone(bank_import.rows.get(row_number=2).transaction_id)
+
+    def test_confirm_import_again_imports_newly_ready_rows(self):
+        bank_import = BankStatementImport.objects.create(
+            uploaded_by=self.user,
+            original_filename="partial2.csv",
+            status=BankStatementImport.Status.PREVIEW,
+        )
+        ready = BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=1,
+            date="2026-06-01",
+            description="First",
+            amount=Decimal("100.00"),
+            currency="TRY",
+            account=self.bank_account,
+            transaction_type="expense",
+            category=self.expense_category,
+        )
+        later = BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=2,
+            date="2026-06-02",
+            description="Second",
+            amount=Decimal("50.00"),
+            currency="TRY",
+            account=self.bank_account,
+        )
+
+        bank_import_ops.confirm_import(bank_import, self.user)
+
+        later.transaction_type = "expense"
+        later.category = self.expense_category
+        later.save(update_fields=["transaction_type", "category"])
+
+        result = bank_import_ops.confirm_import(bank_import, self.user)
+
+        bank_import.refresh_from_db()
+        ready.refresh_from_db()
+        later.refresh_from_db()
+        self.assertEqual(result.imported_count, 1)
+        self.assertEqual(result.pending_count, 0)
+        self.assertEqual(bank_import.status, BankStatementImport.Status.CONFIRMED)
+        self.assertEqual(self.get_transaction_model().objects.count(), 2)
+        self.assertIsNotNone(later.transaction_id)
+        self.assertNotEqual(ready.transaction_id, later.transaction_id)
+
+    def test_online_donation_account_rows_get_default_classification(self):
+        from onikisepet.models import Category
+
+        online_category, _ = Category.objects.get_or_create(
+            name="Online Bağış",
+            defaults={
+                "category_type": Category.CategoryType.INCOME,
+                "is_active": True,
+            },
+        )
+        csv_content = (
+            "date,description,amount,currency,account\n"
+            "2026-06-01,Online donor,250.00,TRY,Online Donation Account\n"
+            "2026-06-02,Shop,80.00,TRY,Main Expense Bank Account\n"
+        )
+        uploaded_file = self._csv_file(csv_content)
+
+        bank_import = bank_import_ops.create_import_from_upload(
+            uploaded_file,
+            self.user,
+        )
+
+        donation_row = bank_import.rows.get(row_number=1)
+        self.assertEqual(donation_row.transaction_type, "income")
+        self.assertEqual(donation_row.category, online_category)
+
+        expense_row = bank_import.rows.get(row_number=2)
+        self.assertEqual(expense_row.transaction_type, "")
+        self.assertIsNone(expense_row.category_id)
+
     def test_parse_amount_supports_turkish_decimal_format(self):
         amount = bank_import_ops.parse_amount_value("1.234,56")
         self.assertEqual(amount, Decimal("1234.56"))
+
+    def test_build_sample_csv_content_includes_required_columns(self):
+        content = bank_import_ops.build_sample_csv_content(
+            account_name="Main Expense Bank Account",
+        )
+
+        self.assertIn("date,description,amount,currency,account", content)
+        self.assertIn("Main Expense Bank Account", content)
+        self.assertIn("125.50", content)
+
+    def test_order_rows_for_preview_puts_errors_first(self):
+        bank_import = BankStatementImport.objects.create(
+            uploaded_by=self.user,
+            original_filename="order.csv",
+        )
+        pending = BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=1,
+            date="2026-06-01",
+            description="Pending",
+            amount=Decimal("10.00"),
+            currency="TRY",
+            account=self.bank_account,
+        )
+        error = BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=2,
+            description="Error",
+            parse_error="bad",
+        )
+        ready = BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=3,
+            date="2026-06-03",
+            description="Ready",
+            amount=Decimal("20.00"),
+            currency="TRY",
+            account=self.bank_account,
+            transaction_type="expense",
+            category=self.expense_category,
+        )
+
+        ordered = bank_import_ops.order_rows_for_preview([pending, error, ready])
+
+        self.assertEqual(
+            [row.pk for row in ordered],
+            [error.pk, pending.pk, ready.pk],
+        )
 
     def test_parse_amount_strips_tl_suffix(self):
         amount = bank_import_ops.parse_amount_value("-1.200,00 TL")

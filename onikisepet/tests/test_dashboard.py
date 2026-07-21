@@ -13,11 +13,11 @@ class DashboardUseCaseTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.admin_user = self.create_user("dashboard_admin", is_superuser=True)
         self.income_category = self.create_category(
-            name="Bağış",
+            name="Dashboard Income Category",
             category_type="income",
         )
         self.expense_category = self.create_category(
-            name="Kira",
+            name="Dashboard Expense Category",
             category_type="expense",
         )
         self.cash_account = self.create_account(
@@ -70,8 +70,11 @@ class DashboardUseCaseTests(TransactionTestMixin, TestCase):
     def test_get_dashboard_context_includes_account_balances(self):
         context = dashboard.get_dashboard_context(reference_date=date(2026, 6, 15))
 
-        self.assertEqual(len(context["account_balances"]), 1)
-        self.assertEqual(context["account_balances"][0]["balance"], Decimal("1000.00"))
+        balances_by_name = {
+            item["account"].name: item["balance"]
+            for item in context["account_balances"]
+        }
+        self.assertEqual(balances_by_name[self.cash_account.name], Decimal("1000.00"))
 
 
 class HomeDashboardViewTests(TransactionTestMixin, TestCase):

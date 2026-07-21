@@ -5,13 +5,20 @@ import unicodedata
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import NamedTuple
 
 from django.core.exceptions import ValidationError
 from django.db import transaction as db_transaction
 
 from onikisepet import messages as msg
 from onikisepet.money_input import parse_localized_decimal
-from onikisepet.models import Account, BankStatementImport, BankStatementRow, Transaction
+from onikisepet.models import (
+    Account,
+    BankStatementImport,
+    BankStatementRow,
+    Category,
+    Transaction,
+)
 from onikisepet.usecases import approval
 from onikisepet.validators import validate_bank_import_file_extension
 
@@ -35,8 +42,33 @@ COLUMN_ALIASES = {
 
 STANDARD_REQUIRED_COLUMNS = ("date", "description", "amount", "currency", "account")
 TURKISH_BANK_REQUIRED_COLUMNS = ("date", "description", "amount")
+SAMPLE_CSV_FILENAME = "ornek-ekstre.csv"
+SAMPLE_CSV_ACCOUNT_FALLBACK = "Garanti - Ana Gider"
 
 DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%m/%d/%Y")
+
+
+class ConfirmImportResult(NamedTuple):
+    bank_import: BankStatementImport
+    imported_count: int
+    pending_count: int
+
+
+def build_sample_csv_content(*, account_name=None):
+    resolved_account = account_name or SAMPLE_CSV_ACCOUNT_FALLBACK
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(STANDARD_REQUIRED_COLUMNS)
+    writer.writerow(
+        [
+            "2026-06-09",
+            "Ornek odeme",
+            "125.50",
+            "TRY",
+            resolved_account,
+        ]
+    )
+    return output.getvalue()
 
 
 def normalize_header(value):
@@ -341,6 +373,23 @@ def read_uploaded_rows(uploaded_file, *, default_account=None):
     raise ValidationError(msg.UNSUPPORTED_BANK_IMPORT_FILE)
 
 
+def default_classification_for_account(account):
+    if account is None:
+        return {}
+    if account.account_purpose != Account.AccountPurpose.ONLINE_DONATION:
+        return {}
+
+    defaults = {"transaction_type": Transaction.TransactionType.INCOME}
+    category = Category.objects.filter(
+        name=msg.ONLINE_DONATION_IMPORT_CATEGORY_NAME,
+        category_type=Category.CategoryType.INCOME,
+        is_active=True,
+    ).first()
+    if category is not None:
+        defaults["category"] = category
+    return defaults
+
+
 def create_import_from_upload(uploaded_file, user, *, default_account=None):
     validate_bank_import_file_extension(uploaded_file)
     uploaded_file.seek(0)
@@ -360,8 +409,14 @@ def create_import_from_upload(uploaded_file, user, *, default_account=None):
             original_filename=uploaded_file.name,
             status=BankStatementImport.Status.PREVIEW,
         )
-        BankStatementRow.objects.bulk_create(
-            [
+        rows_to_create = []
+        for row_data in parsed_rows:
+            classification = {}
+            if not row_data.get("parse_error"):
+                classification = default_classification_for_account(
+                    row_data.get("account"),
+                )
+            rows_to_create.append(
                 BankStatementRow(
                     bank_statement_import=bank_import,
                     row_number=row_data["row_number"],
@@ -371,10 +426,11 @@ def create_import_from_upload(uploaded_file, user, *, default_account=None):
                     currency=row_data.get("currency", ""),
                     account=row_data.get("account"),
                     parse_error=row_data.get("parse_error", ""),
+                    transaction_type=classification.get("transaction_type", ""),
+                    category=classification.get("category"),
                 )
-                for row_data in parsed_rows
-            ]
-        )
+            )
+        BankStatementRow.objects.bulk_create(rows_to_create)
 
     return bank_import
 
@@ -383,7 +439,55 @@ def get_importable_rows(bank_import):
     return bank_import.rows.filter(
         parse_error="",
         is_skipped=False,
+        transaction__isnull=True,
     )
+
+
+def is_row_ready_to_import(row):
+    if row.transaction_id or row.is_skipped or row.parse_error:
+        return False
+    return validate_row_for_confirmation(row) is None
+
+
+def get_row_workflow_status(row):
+    if row.transaction_id:
+        return "saved"
+    if row.parse_error:
+        return "error"
+    if row.is_skipped:
+        return "skipped"
+    if is_row_ready_to_import(row):
+        return "ready"
+    return "pending"
+
+
+def order_rows_for_preview(rows):
+    status_rank = {
+        "error": 0,
+        "pending": 1,
+        "ready": 2,
+        "skipped": 3,
+        "saved": 4,
+    }
+    return sorted(
+        rows,
+        key=lambda row: (
+            status_rank.get(get_row_workflow_status(row), 9),
+            row.row_number,
+        ),
+    )
+
+
+def count_pending_rows(rows):
+    return sum(
+        1
+        for row in rows
+        if get_row_workflow_status(row) == "pending"
+    )
+
+
+def count_error_rows(rows):
+    return sum(1 for row in rows if get_row_workflow_status(row) == "error")
 
 
 def validate_row_for_confirmation(row):
@@ -442,27 +546,25 @@ def confirm_import(bank_import, user):
         raise ValidationError(msg.BANK_IMPORT_ALREADY_CONFIRMED)
 
     rows = list(bank_import.rows.order_by("row_number"))
-    errors = []
-    for row in rows:
-        error = validate_row_for_confirmation(row)
-        if error:
-            errors.append(error)
-
-    if errors:
-        raise ValidationError(errors)
-
-    importable_rows = [row for row in rows if not row.is_skipped and not row.parse_error]
-    if not importable_rows:
+    ready_rows = [row for row in rows if is_row_ready_to_import(row)]
+    if not ready_rows:
         raise ValidationError(msg.BANK_IMPORT_NOT_READY)
 
+    pending_count = count_pending_rows(rows)
+
     with db_transaction.atomic():
-        for row in importable_rows:
+        for row in ready_rows:
             transaction = build_transaction_from_row(row, user)
             transaction.save()
             row.transaction = transaction
             row.save(update_fields=["transaction"])
 
-        bank_import.status = BankStatementImport.Status.CONFIRMED
-        bank_import.save(update_fields=["status"])
+        if pending_count == 0:
+            bank_import.status = BankStatementImport.Status.CONFIRMED
+            bank_import.save(update_fields=["status"])
 
-    return bank_import
+    return ConfirmImportResult(
+        bank_import=bank_import,
+        imported_count=len(ready_rows),
+        pending_count=pending_count,
+    )

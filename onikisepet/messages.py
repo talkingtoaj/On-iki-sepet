@@ -77,3 +77,23 @@ BANK_IMPORT_ROW_REQUIRES_CATEGORY = "Satır {row_number} için kategori seçilme
 BANK_IMPORT_ROW_REQUIRES_TARGET_ACCOUNT = (
     "Satır {row_number} için hedef hesap seçilmelidir."
 )
+ONLINE_DONATION_IMPORT_CATEGORY_NAME = "Online Bağış"
+BANK_IMPORT_UPLOAD_HELP_CSV = (
+    "CSV veya Excel için örnek şablonu indirip hesap adını sistemdekiyle aynı yazın."
+)
+BANK_IMPORT_UPLOAD_HELP_PDF = (
+    "PDF okunmuyorsa: hesabın seçili olduğundan emin olun; "
+    "Tarih, Hareket tipi, Açıklama ve İşlem Tutarı sütunları olmalı; "
+    "olmuyorsa bankadan CSV/Excel indirin."
+)
+
+
+def bank_import_partial_success_message(imported_count, pending_count):
+    return (
+        f"{imported_count} işlem kaydedildi. "
+        f"{pending_count} satır daha sonra sınıflandırılmak üzere bekliyor."
+    )
+
+
+def bank_import_full_success_message(imported_count):
+    return f"{imported_count} işlem içe aktarıldı."

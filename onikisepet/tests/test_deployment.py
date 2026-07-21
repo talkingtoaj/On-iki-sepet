@@ -17,15 +17,18 @@ class DockerfileDeploymentTests(SimpleTestCase):
             dockerfile,
         )
 
-    def test_dockerfile_uses_entrypoint_for_migrations(self):
+    def test_migrations_run_in_cloud_build_not_container_entrypoint(self):
         dockerfile = (PROJECT_ROOT / "Dockerfile").read_text(encoding="utf-8")
+        cloudbuild = (PROJECT_ROOT / "cloudbuild.yaml").read_text(encoding="utf-8")
         entrypoint = (PROJECT_ROOT / "docker" / "entrypoint.sh").read_text(
             encoding="utf-8"
         )
 
         self.assertIn("entrypoint", dockerfile.lower())
-        self.assertIn("migrate", entrypoint)
-        self.assertIn("--noinput", entrypoint)
+        self.assertIn("migrate", cloudbuild)
+        self.assertIn("--noinput", cloudbuild)
+        self.assertIn('exec "$@"', entrypoint)
+        self.assertNotIn("manage.py", entrypoint)
 
     def test_dockerfile_installs_production_optional_dependencies(self):
         dockerfile = (PROJECT_ROOT / "Dockerfile").read_text(encoding="utf-8")
@@ -75,16 +78,16 @@ class CiCdWorkflowTests(SimpleTestCase):
         self.assertIn("manage.py test", contents)
         self.assertIn("onikisepet", contents)
 
-    def test_deploy_workflow_exists_for_gcp(self):
-        workflow = PROJECT_ROOT / ".github" / "workflows" / "deploy-gcp.yml"
+    def test_cloud_build_deploy_config_exists_for_gcp(self):
+        cloudbuild = PROJECT_ROOT / "cloudbuild.yaml"
 
-        self.assertTrue(workflow.is_file())
-        contents = workflow.read_text(encoding="utf-8")
+        self.assertTrue(cloudbuild.is_file())
+        contents = cloudbuild.read_text(encoding="utf-8")
         for fragment in (
-            "Artifact Registry",
             "Cloud Run",
             "DATABASE_URL",
             "GCS_MEDIA_BUCKET_NAME",
+            "kut-finans",
         ):
             with self.subTest(fragment=fragment):
                 self.assertIn(fragment, contents)

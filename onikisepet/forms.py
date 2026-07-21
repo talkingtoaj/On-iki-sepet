@@ -594,13 +594,7 @@ class BankStatementRowClassificationForm(StyledFormMixin, forms.ModelForm):
         skip_row = cleaned_data.get("skip_row", False)
         transaction_type = cleaned_data.get("transaction_type")
 
-        if skip_row:
-            return cleaned_data
-
-        if not transaction_type:
-            self.add_error("transaction_type", msg.BANK_IMPORT_ROW_REQUIRES_TYPE.format(
-                row_number=self.instance.row_number,
-            ))
+        if skip_row or not transaction_type:
             return cleaned_data
 
         if transaction_type in (
@@ -609,13 +603,8 @@ class BankStatementRowClassificationForm(StyledFormMixin, forms.ModelForm):
         ):
             category = cleaned_data.get("category")
             if category is None:
-                self.add_error(
-                    "category",
-                    msg.BANK_IMPORT_ROW_REQUIRES_CATEGORY.format(
-                        row_number=self.instance.row_number,
-                    ),
-                )
-            elif transaction_type == Transaction.TransactionType.INCOME and (
+                return cleaned_data
+            if transaction_type == Transaction.TransactionType.INCOME and (
                 category.category_type != Category.CategoryType.INCOME
             ):
                 self.add_error("category", msg.INCOME_REQUIRES_INCOME_CATEGORY)
@@ -627,13 +616,8 @@ class BankStatementRowClassificationForm(StyledFormMixin, forms.ModelForm):
         if transaction_type == Transaction.TransactionType.TRANSFER:
             target_account = cleaned_data.get("target_account")
             if target_account is None:
-                self.add_error(
-                    "target_account",
-                    msg.BANK_IMPORT_ROW_REQUIRES_TARGET_ACCOUNT.format(
-                        row_number=self.instance.row_number,
-                    ),
-                )
-            elif target_account == self.instance.account:
+                return cleaned_data
+            if target_account == self.instance.account:
                 self.add_error("target_account", msg.TRANSFER_ACCOUNTS_MUST_DIFFER)
 
         return cleaned_data
