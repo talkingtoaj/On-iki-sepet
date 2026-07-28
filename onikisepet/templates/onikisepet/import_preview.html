@@ -1,6 +1,7 @@
 {% extends "onikisepet/base.html" %}
 {% load l10n %}
 {% load import_tags %}
+{% load money_tags %}
 
 {% block title %}Ekstre Önizleme | KUT Finans{% endblock %}
 
@@ -87,7 +88,7 @@
                                     <span class="import-card__account">{{ row.account|default:"-" }}</span>
                                 </div>
                                 <div class="import-card__amount">
-                                    {{ row.amount|default:"-" }} {{ row.currency }}
+                                    {% if row.amount != None %}{{ row.amount|money }} {{ row.currency }}{% else %}-{% endif %}
                                 </div>
                             </div>
                             <p class="import-card__status">
@@ -120,7 +121,7 @@
                                         <span class="import-card__account">{{ row.account|default:"-" }}</span>
                                     </div>
                                     <div class="import-card__amount">
-                                        {{ row.amount|default:"-" }} {{ row.currency }}
+                                        {% if row.amount != None %}{{ row.amount|money }} {{ row.currency }}{% else %}-{% endif %}
                                     </div>
                                 </div>
                                 <div class="import-card__body">
@@ -165,7 +166,7 @@
                                         <span class="import-card__account">{{ row.account|default:"-" }}</span>
                                     </div>
                                     <div class="import-card__amount">
-                                        {{ row.amount|default:"-" }} {{ row.currency }}
+                                        {% if row.amount != None %}{{ row.amount|money }} {{ row.currency }}{% else %}-{% endif %}
                                     </div>
                                 </div>
                                 <div class="import-card__body row-form">

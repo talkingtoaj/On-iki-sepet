@@ -47,11 +47,26 @@ def format_turkish_decimal(value):
     sign = "-" if value < 0 else ""
     quantized = abs(value).quantize(Decimal("0.01"))
     integer_part, _, fractional_part = f"{quantized:.2f}".partition(".")
-    grouped_integer = _group_thousands(integer_part)
+    grouped_integer = _group_thousands(integer_part, separator=".")
     return f"{sign}{grouped_integer},{fractional_part}"
 
 
-def _group_thousands(integer_part):
+def format_display_decimal(value):
+    """Display amounts as 46,076.25 (thousands comma, decimal point)."""
+    if value in (None, ""):
+        return ""
+
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value))
+
+    sign = "-" if value < 0 else ""
+    quantized = abs(value).quantize(Decimal("0.01"))
+    integer_part, _, fractional_part = f"{quantized:.2f}".partition(".")
+    grouped_integer = _group_thousands(integer_part, separator=",")
+    return f"{sign}{grouped_integer}.{fractional_part}"
+
+
+def _group_thousands(integer_part, *, separator="."):
     if len(integer_part) <= 3:
         return integer_part
 
@@ -59,7 +74,7 @@ def _group_thousands(integer_part):
     while integer_part:
         groups.append(integer_part[-3:])
         integer_part = integer_part[:-3]
-    return ".".join(reversed(groups))
+    return separator.join(reversed(groups))
 
 
 class TurkishMoneyInput(forms.TextInput):

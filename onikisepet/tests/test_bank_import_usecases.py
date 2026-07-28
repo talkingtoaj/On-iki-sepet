@@ -166,6 +166,84 @@ class BankImportUsecaseTests(TransactionTestMixin, TestCase):
             self.get_transaction_model().ApprovalStatus.PENDING,
         )
 
+    def test_confirm_import_creates_incoming_transfer_with_reversed_accounts(self):
+        bank_import = BankStatementImport.objects.create(
+            uploaded_by=self.user,
+            original_filename="incoming-transfer.csv",
+            status=BankStatementImport.Status.PREVIEW,
+        )
+        BankStatementRow.objects.create(
+            bank_statement_import=bank_import,
+            row_number=1,
+            date="2026-06-04",
+            description="Gelir Transfer — From cash",
+            amount=Decimal("250.00"),
+            currency="TRY",
+            account=self.bank_account,
+            transaction_type="transfer",
+            is_incoming_transfer=True,
+            target_account=self.cash_account,
+        )
+
+        bank_import_ops.confirm_import(bank_import, self.user)
+
+        row = bank_import.rows.get()
+        self.assertEqual(row.transaction.transaction_type, "transfer")
+        self.assertEqual(row.transaction.source_account, self.cash_account)
+        self.assertEqual(row.transaction.target_account, self.bank_account)
+
+    def test_hareket_tipi_maps_gider_and_gelir_transfer(self):
+        cases = [
+            ("Gider Transfer", "transfer", False),
+            ("Gelir Transfer", "transfer", True),
+            ("Gider", "expense", False),
+            ("Harcama", "expense", False),
+            ("Gelir", "income", False),
+            ("gider transfer", "transfer", False),
+            ("  GELİR TRANSFER  ", "transfer", True),
+            ("harcama", "expense", False),
+            ("unknown", "", False),
+        ]
+        for raw, expected_type, expected_incoming in cases:
+            with self.subTest(raw=raw):
+                result = bank_import_ops.classification_from_hareket_tipi(raw)
+                self.assertEqual(result.get("transaction_type", ""), expected_type)
+                self.assertEqual(
+                    result.get("is_incoming_transfer", False),
+                    expected_incoming,
+                )
+
+    def test_create_import_classifies_rows_from_hareket_tipi_column(self):
+        csv_content = (
+            "date,description,amount,currency,account,hareket_tipi\n"
+            "2026-06-01,Market,125.50,TRY,Main Expense Bank Account,Gider\n"
+            "2026-06-02,Kasaya,500.00,TRY,Main Expense Bank Account,Gider Transfer\n"
+            "2026-06-03,Kasadan,200.00,TRY,Main Expense Bank Account,Gelir Transfer\n"
+            "2026-06-04,Bagış,80.00,TRY,Main Expense Bank Account,Gelir\n"
+        )
+        uploaded_file = self._csv_file(csv_content)
+
+        bank_import = bank_import_ops.create_import_from_upload(
+            uploaded_file,
+            self.user,
+        )
+
+        gider = bank_import.rows.get(row_number=1)
+        self.assertEqual(gider.transaction_type, "expense")
+        self.assertFalse(gider.is_incoming_transfer)
+
+        gider_transfer = bank_import.rows.get(row_number=2)
+        self.assertEqual(gider_transfer.transaction_type, "transfer")
+        self.assertFalse(gider_transfer.is_incoming_transfer)
+
+        gelir_transfer = bank_import.rows.get(row_number=3)
+        self.assertEqual(gelir_transfer.transaction_type, "transfer")
+        self.assertTrue(gelir_transfer.is_incoming_transfer)
+
+        gelir = bank_import.rows.get(row_number=4)
+        self.assertEqual(gelir.transaction_type, "income")
+        self.assertFalse(gelir.is_incoming_transfer)
+
     def test_confirm_import_skips_marked_rows(self):
         bank_import = BankStatementImport.objects.create(
             uploaded_by=self.user,

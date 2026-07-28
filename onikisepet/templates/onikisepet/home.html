@@ -1,5 +1,6 @@
 {% extends "onikisepet/base.html" %}
 {% load l10n %}
+{% load money_tags %}
 
 {% block title %}Ana Sayfa | KUT Finans{% endblock %}
 
@@ -27,68 +28,39 @@
     <div class="dashboard-grid">
         <section class="summary-card">
             <h2>TRY — Bu Ay</h2>
-            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.TRY.total_income|stringformat:".2f" }} TRY</span></p>
-            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.TRY.total_expenses|stringformat:".2f" }} TRY</span></p>
-            <p class="metric">Net: <span class="metric-value">{{ currency_summary.TRY.net_financial_status|stringformat:".2f" }} TRY</span></p>
+            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.TRY.total_income|money }} TRY</span></p>
+            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.TRY.total_expenses|money }} TRY</span></p>
+            <p class="metric">Net: <span class="metric-value">{{ currency_summary.TRY.net_financial_status|money }} TRY</span></p>
         </section>
         <section class="summary-card">
             <h2>USD — Bu Ay</h2>
-            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.USD.total_income|stringformat:".2f" }} USD</span></p>
-            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.USD.total_expenses|stringformat:".2f" }} USD</span></p>
-            <p class="metric">Net: <span class="metric-value">{{ currency_summary.USD.net_financial_status|stringformat:".2f" }} USD</span></p>
+            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.USD.total_income|money }} USD</span></p>
+            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.USD.total_expenses|money }} USD</span></p>
+            <p class="metric">Net: <span class="metric-value">{{ currency_summary.USD.net_financial_status|money }} USD</span></p>
         </section>
         <section class="summary-card">
             <h2>EUR — Bu Ay</h2>
-            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.EUR.total_income|stringformat:".2f" }} EUR</span></p>
-            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.EUR.total_expenses|stringformat:".2f" }} EUR</span></p>
-            <p class="metric">Net: <span class="metric-value">{{ currency_summary.EUR.net_financial_status|stringformat:".2f" }} EUR</span></p>
+            <p class="metric">Gelir: <span class="metric-value">{{ currency_summary.EUR.total_income|money }} EUR</span></p>
+            <p class="metric">Gider: <span class="metric-value">{{ currency_summary.EUR.total_expenses|money }} EUR</span></p>
+            <p class="metric">Net: <span class="metric-value">{{ currency_summary.EUR.net_financial_status|money }} EUR</span></p>
         </section>
     </div>
 
-    <div class="two-col">
-        <section class="panel">
-            <h2>En Büyük Gider Kalemleri (Bu Ay)</h2>
-            {% if top_expenses %}
-                <ul class="expense-list">
-                    {% for item in top_expenses %}
-                        <li class="expense-item">
-                            <span>{{ item.category.name }}</span>
-                            <span>{{ item.total|stringformat:".2f" }} {{ item.currency }}</span>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>Bu ay henüz gider kaydı yok.</p>
-            {% endif %}
-        </section>
-
-        <section class="panel">
-            <h2>Hızlı İşlemler</h2>
-            {% if can_create_transactions %}
-                <p class="home-notice">
-                    <a href="{% url 'record_type_guide' %}">Hangi formu kullanmalıyım?</a>
-                </p>
-            {% endif %}
-            <ul class="quick-actions">
-                {% if can_create_transactions %}
-                    <li><a href="{% url 'cash_income_create' %}">Nakit Gelir</a></li>
-                    <li><a href="{% url 'cash_expense_create' %}">Nakit Gider</a></li>
-                    <li><a href="{% url 'bank_expense_create' %}">Banka Gideri</a></li>
-                    <li><a href="{% url 'online_donation_income_create' %}">Online Bağış</a></li>
-                    <li><a href="{% url 'transfer_create' %}">Transfer</a></li>
-                    <li><a href="{% url 'import_new' %}">Ekstre Yükle</a></li>
-                {% endif %}
-                <li><a href="{% url 'report_dashboard' %}">Detaylı Raporlar</a></li>
-                {% if can_view_operational_pages %}
-                    <li><a href="{% url 'transaction_list' %}">Tüm İşlemler</a></li>
-                {% endif %}
+    <section class="panel">
+        <h2>En Büyük Gider Kalemleri (Bu Ay)</h2>
+        {% if top_expenses %}
+            <ul class="expense-list">
+                {% for item in top_expenses %}
+                    <li class="expense-item">
+                        <span>{{ item.category.name }}</span>
+                        <span>{{ item.total|money }} {{ item.currency }}</span>
+                    </li>
+                {% endfor %}
             </ul>
-        </section>
-    </div>
-
-    {% if can_manage_users %}
-        {% include "onikisepet/partials/admin_panel.html" %}
-    {% endif %}
+        {% else %}
+            <p>Bu ay henüz gider kaydı yok.</p>
+        {% endif %}
+    </section>
 
     <section class="panel" style="margin-top: 18px;">
         <h2>Hesap Bakiyeleri (Güncel)</h2>
@@ -97,7 +69,7 @@
                 {% for item in account_balances %}
                     <li class="balance-item">
                         <span>{{ item.account.name }}</span>
-                        <span>{{ item.balance|stringformat:".2f" }} {{ item.account.currency }}</span>
+                        <span>{{ item.balance|money }} {{ item.account.currency }}</span>
                     </li>
                 {% endfor %}
             </ul>

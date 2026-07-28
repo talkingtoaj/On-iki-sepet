@@ -300,7 +300,7 @@ class AccountViewTests(AccountTestMixin, TransactionTestMixin, TestCase):
         response = self.client.get(self.account_list_url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "1250.00 TRY")
+        self.assertContains(response, "1,250.00 TRY")
 
     def test_account_list_displays_empty_message_when_there_are_no_accounts(self):
         self.get_account_model().objects.all().delete()

@@ -105,15 +105,22 @@ class RoleBasedHomeContentTests(TransactionTestMixin, ProfileTestMixin, TestCase
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Onay Bekleyen İşler")
 
-    def test_admin_sees_approval_and_admin_panels(self):
+    def test_admin_sees_approval_panel_on_home(self):
         self._login(self.admin_user)
 
         response = self.client.get(self.home_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Onay Bekleyen İşler")
-        self.assertContains(response, "Sistem Yönetimi")
-        self.assertContains(response, reverse("user_list"))
+
+    def test_home_does_not_show_quick_actions_or_admin_panel(self):
+        self._login(self.admin_user)
+
+        response = self.client.get(self.home_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Hızlı İşlemler")
+        self.assertNotContains(response, "Sistem Yönetimi")
 
     def test_home_does_not_show_demo_sections(self):
         self._login(self.data_entry_user)

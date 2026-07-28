@@ -1,4 +1,5 @@
 {% load l10n %}
+{% load money_tags %}
 {% localize off %}
 <tbody data-transaction-row-group>
     <tr
@@ -25,19 +26,13 @@
         {% endif %}
         <td>{{ transaction.date|date:"Y-m-d" }}</td>
         <td>{{ transaction.get_transaction_type_display }}</td>
-        <td class="amount-cell">{{ transaction.amount|stringformat:".2f" }} {{ transaction.currency }}</td>
+        <td class="amount-cell">{{ transaction.amount|money }} {{ transaction.currency }}</td>
         <td>{{ transaction.payee|default:"-" }}</td>
         <td>{% if transaction.source_account %}{{ transaction.source_account.name }}{% else %}-{% endif %}</td>
         <td>{% if transaction.target_account %}{{ transaction.target_account.name }}{% else %}-{% endif %}</td>
         <td>{% if transaction.category %}{{ transaction.category.name }}{% else %}-{% endif %}</td>
         <td>{{ transaction.description|default:"-" }}</td>
         <td>
-            <span class="badge badge--{{ transaction.approval_status }}">
-                {{ transaction.get_approval_status_display }}
-            </span>
-            {% if transaction.approval_status == "rejected" and transaction.rejection_reason %}
-                <p class="transaction-rejection-reason">{{ transaction.rejection_reason }}</p>
-            {% endif %}
             {% if can_approve_transactions and transaction.approval_status == "pending" %}
                 <div class="approval-actions">
                     <form
@@ -60,6 +55,13 @@
                         hx-on::before-request="document.getElementById('transaction-detail-{{ transaction.pk }}').removeAttribute('hidden')"
                     >Reddet</button>
                 </div>
+            {% else %}
+                <span class="badge badge--{{ transaction.approval_status }}">
+                    {{ transaction.get_approval_status_display }}
+                </span>
+                {% if transaction.approval_status == "rejected" and transaction.rejection_reason %}
+                    <p class="transaction-rejection-reason">{{ transaction.rejection_reason }}</p>
+                {% endif %}
             {% endif %}
         </td>
         <td>

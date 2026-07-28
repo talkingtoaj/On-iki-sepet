@@ -1,5 +1,6 @@
 {% extends "onikisepet/base.html" %}
 {% load l10n %}
+{% load money_tags %}
 
 {% block title %}Hesaplar | KUT Finans{% endblock %}
 
@@ -38,8 +39,8 @@
                                 <td>{{ item.account.name }}</td>
                                 <td>{{ item.account.get_account_type_display }}</td>
                                 <td>{{ item.account.currency }}</td>
-                                <td class="tabular-nums">{{ item.account.opening_balance|stringformat:".2f" }} {{ item.account.currency }}</td>
-                                <td class="data-table__amount">{{ item.balance|stringformat:".2f" }} {{ item.account.currency }}</td>
+                                <td class="tabular-nums">{{ item.account.opening_balance|money }} {{ item.account.currency }}</td>
+                                <td class="data-table__amount">{{ item.balance|money }} {{ item.account.currency }}</td>
                                 <td>
                                     {% if item.account.is_active %}
                                         <span class="badge badge--active">Aktif</span>

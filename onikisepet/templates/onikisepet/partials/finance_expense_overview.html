@@ -1,4 +1,5 @@
 {% load l10n %}
+{% load money_tags %}
 {% localize off %}
 <div class="currency-panel">
     <h3>Bu Ay Giderleri</h3>
@@ -11,7 +12,7 @@
             {% for item in top_expenses %}
                 <li>
                     <span>{{ item.category.name }}</span>
-                    <span>{{ item.total|stringformat:".2f" }} {{ item.currency }}</span>
+                    <span>{{ item.total|money }} {{ item.currency }}</span>
                 </li>
             {% endfor %}
         </ul>

@@ -619,12 +619,12 @@ textarea:focus-visible,
 .data-table__amount {
     font-weight: 800;
     white-space: nowrap;
-    text-align: right;
+    text-align: left;
     font-variant-numeric: tabular-nums;
 }
 
 .data-table th.data-table__amount {
-    text-align: right;
+    text-align: left;
 }
 
 .data-table__empty {
@@ -778,9 +778,15 @@ textarea:focus-visible,
 
 .approval-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 6px;
-    margin-top: 6px;
+}
+
+.approval-actions form {
+    display: inline-flex;
+    margin: 0;
 }
 
 .bulk-approve-form {
@@ -823,12 +829,9 @@ textarea:focus-visible,
     text-align: center;
 }
 
-.approval-actions form {
-    display: inline;
+.bulk-approve-form {
+    margin-bottom: 14px;
 }
-
-.approve-button,
-.reject-button {
     border: 0;
     border-radius: 999px;
     cursor: pointer;

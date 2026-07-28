@@ -576,7 +576,11 @@ class BankStatementRowClassificationForm(StyledFormMixin, forms.ModelForm):
         self.fields["target_account"].required = False
         self.fields["payee"].required = False
         self.fields["category"].queryset = Category.objects.filter(is_active=True)
-        self.fields["target_account"].queryset = transfer_target_accounts()
+        if self.instance and self.instance.is_incoming_transfer:
+            self.fields["target_account"].label = "Kaynak hesap"
+            self.fields["target_account"].queryset = transfer_source_accounts()
+        else:
+            self.fields["target_account"].queryset = transfer_target_accounts()
 
         if self.instance and self.instance.parse_error:
             for field_name in ("transaction_type", "category", "target_account", "payee"):
@@ -625,6 +629,8 @@ class BankStatementRowClassificationForm(StyledFormMixin, forms.ModelForm):
     def save(self, commit=True):
         row = super().save(commit=False)
         row.is_skipped = self.cleaned_data.get("skip_row", False)
+        if row.transaction_type != Transaction.TransactionType.TRANSFER:
+            row.is_incoming_transfer = False
         if commit:
             row.save()
         return row

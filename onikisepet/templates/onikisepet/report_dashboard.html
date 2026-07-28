@@ -1,5 +1,6 @@
 {% extends "onikisepet/base.html" %}
 {% load l10n %}
+{% load money_tags %}
 
 {% block title %}Finansal Özet | KUT Finans{% endblock %}
 
@@ -107,7 +108,7 @@
                 {% for item in account_balances %}
                     <li class="balance-item">
                         <span class="account-name">{{ item.account.name }}</span>
-                        <span class="account-balance tabular-nums">{{ item.balance|stringformat:".2f" }} {{ item.account.currency }}</span>
+                        <span class="account-balance tabular-nums">{{ item.balance|money }} {{ item.account.currency }}</span>
                     </li>
                 {% endfor %}
             </ul>

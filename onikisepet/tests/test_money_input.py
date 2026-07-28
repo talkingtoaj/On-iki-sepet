@@ -3,7 +3,11 @@ from decimal import Decimal
 from django.test import SimpleTestCase, TestCase
 
 from onikisepet.forms import CashIncomeForm, TransactionEditForm
-from onikisepet.money_input import format_turkish_decimal, parse_localized_decimal
+from onikisepet.money_input import (
+    format_display_decimal,
+    format_turkish_decimal,
+    parse_localized_decimal,
+)
 
 from .helpers import TransactionTestMixin
 
@@ -28,6 +32,17 @@ class FormatTurkishDecimalTests(SimpleTestCase):
 
     def test_formats_small_amount(self):
         self.assertEqual(format_turkish_decimal(Decimal("500")), "500,00")
+
+
+class FormatDisplayDecimalTests(SimpleTestCase):
+    def test_formats_with_comma_thousands_and_dot_decimal(self):
+        self.assertEqual(format_display_decimal(Decimal("46076.25")), "46,076.25")
+
+    def test_formats_small_amount_without_thousands(self):
+        self.assertEqual(format_display_decimal(Decimal("500")), "500.00")
+
+    def test_formats_negative_amount(self):
+        self.assertEqual(format_display_decimal(Decimal("-50.00")), "-50.00")
 
 
 class TransactionAmountFieldTests(TransactionTestMixin, TestCase):

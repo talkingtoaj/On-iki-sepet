@@ -1,4 +1,5 @@
 {% load l10n %}
+{% load money_tags %}
 {% localize off %}
 <div class="htmx-panel">
     <h3>{{ currency }} — Bu Ay Detay</h3>
@@ -6,9 +7,9 @@
         {{ month_start|date:"d F Y" }} – {{ month_end|date:"d F Y" }}
     </p>
     <ul class="htmx-panel__metrics">
-        <li>Gelir: <strong>{{ summary.total_income|stringformat:".2f" }} {{ currency }}</strong></li>
-        <li>Gider: <strong>{{ summary.total_expenses|stringformat:".2f" }} {{ currency }}</strong></li>
-        <li>Net: <strong>{{ summary.net_financial_status|stringformat:".2f" }} {{ currency }}</strong></li>
+        <li>Gelir: <strong>{{ summary.total_income|money }} {{ currency }}</strong></li>
+        <li>Gider: <strong>{{ summary.total_expenses|money }} {{ currency }}</strong></li>
+        <li>Net: <strong>{{ summary.net_financial_status|money }} {{ currency }}</strong></li>
     </ul>
     {% if accounts %}
         <h4>{{ currency }} Hesap Bakiyeleri</h4>
@@ -16,7 +17,7 @@
             {% for item in accounts %}
                 <li>
                     <span>{{ item.account.name }}</span>
-                    <span>{{ item.balance|stringformat:".2f" }} {{ currency }}</span>
+                    <span>{{ item.balance|money }} {{ currency }}</span>
                 </li>
             {% endfor %}
         </ul>

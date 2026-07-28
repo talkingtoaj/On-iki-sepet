@@ -1,5 +1,6 @@
 {% extends "onikisepet/base.html" %}
 {% load l10n %}
+{% load money_tags %}
 
 {% block title %}Ekstre Onayı | KUT Finans{% endblock %}
 
@@ -64,7 +65,7 @@
                                 <td>{{ row.row_number }}</td>
                                 <td>{{ row.date|default:"-" }}</td>
                                 <td>{{ row.description|default:"-" }}</td>
-                                <td>{{ row.amount|default:"-" }} {{ row.currency }}</td>
+                                <td>{% if row.amount != None %}{{ row.amount|money }} {{ row.currency }}{% else %}-{% endif %}</td>
                                 <td>{{ row.get_transaction_type_display|default:"-" }}</td>
                                 <td>{{ row.account|default:"-" }}</td>
                                 <td>
@@ -103,7 +104,7 @@
                                     <td>{{ row.row_number }}</td>
                                     <td>{{ row.date|default:"-" }}</td>
                                     <td>{{ row.description|default:"-" }}</td>
-                                    <td>{{ row.amount|default:"-" }} {{ row.currency }}</td>
+                                    <td>{% if row.amount != None %}{{ row.amount|money }} {{ row.currency }}{% else %}-{% endif %}</td>
                                     <td>
                                         {% if row.transaction_id %}
                                             Kaydedildi

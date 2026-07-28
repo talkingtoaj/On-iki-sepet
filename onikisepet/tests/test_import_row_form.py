@@ -17,6 +17,12 @@ class BankStatementRowClassificationFormTests(TransactionTestMixin, TestCase):
             account_purpose="main_expense",
             currency="TRY",
         )
+        self.cash_account = self.create_account(
+            name="Form Cash",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+        )
         self.expense_category = self.create_category(
             name="Form Expense",
             category_type="expense",
@@ -76,3 +82,40 @@ class BankStatementRowClassificationFormTests(TransactionTestMixin, TestCase):
         )
 
         self.assertTrue(form.is_valid(), form.errors)
+
+    def test_incoming_transfer_labels_counterparty_as_source_account(self):
+        self.row.is_incoming_transfer = True
+        self.row.transaction_type = "transfer"
+        self.row.save(update_fields=["is_incoming_transfer", "transaction_type"])
+
+        form = BankStatementRowClassificationForm(instance=self.row)
+
+        self.assertEqual(form.fields["target_account"].label, "Kaynak hesap")
+
+    def test_outgoing_transfer_keeps_target_account_label(self):
+        self.row.transaction_type = "transfer"
+        self.row.save(update_fields=["transaction_type"])
+
+        form = BankStatementRowClassificationForm(instance=self.row)
+
+        self.assertEqual(form.fields["target_account"].label, "Hedef hesap")
+
+    def test_saving_non_transfer_clears_incoming_flag(self):
+        self.row.is_incoming_transfer = True
+        self.row.transaction_type = "transfer"
+        self.row.save(update_fields=["is_incoming_transfer", "transaction_type"])
+
+        form = BankStatementRowClassificationForm(
+            data={
+                "transaction_type": "expense",
+                "category": self.expense_category.pk,
+                "target_account": "",
+                "payee": "",
+                "skip_row": "",
+            },
+            instance=self.row,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        row = form.save()
+        self.assertFalse(row.is_incoming_transfer)

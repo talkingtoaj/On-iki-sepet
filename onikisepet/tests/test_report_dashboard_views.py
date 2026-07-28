@@ -410,6 +410,18 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
             fetch_redirect_response=False,
         )
 
+    def test_report_dashboard_shows_start_and_end_date_inputs(self):
+        self._login_viewer()
+
+        response = self.client.get(self.report_dashboard_url)
+
+        self.assertContains(response, 'id="start_date"')
+        self.assertContains(response, 'id="end_date"')
+        self.assertContains(response, 'name="start_date"')
+        self.assertContains(response, 'name="end_date"')
+        self.assertContains(response, 'type="date"')
+        self.assertNotContains(response, "flatpickr")
+
     def test_report_dashboard_displays_total_income(self):
         self._create_report_scenario()
         self._login_viewer()
@@ -526,7 +538,7 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
         response = self.client.get(self.report_dashboard_url)
 
         self.assertContains(response, "Cash Account")
-        self.assertContains(response, "1000.00")
+        self.assertContains(response, "1,000.00")
 
     def test_account_balance_reflects_income_expense_and_transfer_movement(self):
         self._create_report_scenario()
@@ -813,8 +825,10 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Donation: 700.00 TRY")
-        self.assertContains(response, "Special Support: 300.00 TRY")
+        self.assertContains(response, "Donation")
+        self.assertContains(response, "700.00 TRY")
+        self.assertContains(response, "Special Support")
+        self.assertContains(response, "300.00 TRY")
 
     def test_report_dashboard_income_category_totals_show_currency(self):
         self._create_category_report_scenario()
@@ -822,8 +836,9 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Donation: 700.00 TRY")
-        self.assertContains(response, "Donation: 100.00 USD")
+        self.assertContains(response, "Donation")
+        self.assertContains(response, "700.00 TRY")
+        self.assertContains(response, "100.00 USD")
 
     def test_report_dashboard_income_category_totals_do_not_include_expenses(self):
         self._create_category_report_scenario()
@@ -831,8 +846,9 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Donation: 700.00 TRY")
-        self.assertNotContains(response, "Donation: 950.00 TRY")
+        self.assertContains(response, "Donation")
+        self.assertContains(response, "700.00 TRY")
+        self.assertNotContains(response, "950.00 TRY")
 
     def test_report_dashboard_income_category_totals_do_not_include_transfers(self):
         self._create_category_report_scenario()
@@ -840,8 +856,9 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Donation: 700.00 TRY")
-        self.assertNotContains(response, "Donation: 1699.00 TRY")
+        self.assertContains(response, "Donation")
+        self.assertContains(response, "700.00 TRY")
+        self.assertNotContains(response, "1,699.00 TRY")
 
     def test_report_dashboard_displays_expenses_by_category_section(self):
         self._create_category_report_scenario()
@@ -857,8 +874,11 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Rent: 250.00 TRY")
-        self.assertContains(response, "Bills: 75.00 TRY")
+        self.assertContains(response, "Rent")
+        self.assertContains(response, "250.00 TRY")
+        self.assertContains(response, "Bills")
+        self.assertContains(response, "75.00 TRY")
+        self.assertNotContains(response, "En yüksek 5 gider kalemi")
 
     def test_report_dashboard_expense_category_totals_show_currency(self):
         self._create_category_report_scenario()
@@ -866,8 +886,9 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Rent: 250.00 TRY")
-        self.assertContains(response, "Rent: 40.00 USD")
+        self.assertContains(response, "Rent")
+        self.assertContains(response, "250.00 TRY")
+        self.assertContains(response, "40.00 USD")
 
     def test_report_dashboard_expense_category_totals_do_not_include_income(self):
         self._create_category_report_scenario()
@@ -875,8 +896,9 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Rent: 250.00 TRY")
-        self.assertNotContains(response, "Rent: 950.00 TRY")
+        self.assertContains(response, "Rent")
+        self.assertContains(response, "250.00 TRY")
+        self.assertNotContains(response, "950.00 TRY")
 
     def test_report_dashboard_expense_category_totals_do_not_include_transfers(self):
         self._create_category_report_scenario()
@@ -884,8 +906,9 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Rent: 250.00 TRY")
-        self.assertNotContains(response, "Rent: 1249.00 TRY")
+        self.assertContains(response, "Rent")
+        self.assertContains(response, "250.00 TRY")
+        self.assertNotContains(response, "1,249.00 TRY")
 
     def test_report_dashboard_category_totals_do_not_mix_currencies(self):
         self._create_category_report_scenario()
@@ -893,12 +916,14 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
 
         response = self.client.get(self.report_dashboard_url)
 
-        self.assertContains(response, "Donation: 700.00 TRY")
-        self.assertContains(response, "Donation: 100.00 USD")
-        self.assertContains(response, "Rent: 250.00 TRY")
-        self.assertContains(response, "Rent: 40.00 USD")
-        self.assertNotContains(response, "Donation: 800.00 TRY")
-        self.assertNotContains(response, "Rent: 290.00 TRY")
+        self.assertContains(response, "Donation")
+        self.assertContains(response, "700.00 TRY")
+        self.assertContains(response, "100.00 USD")
+        self.assertContains(response, "Rent")
+        self.assertContains(response, "250.00 TRY")
+        self.assertContains(response, "40.00 USD")
+        self.assertNotContains(response, "800.00 TRY")
+        self.assertNotContains(response, "290.00 TRY")
 
     def test_report_dashboard_category_totals_respect_date_range(self):
         self._create_category_date_range_scenario()
@@ -909,9 +934,11 @@ class ReportDashboardViewTests(TransactionTestMixin, TestCase):
             {"start_date": "2026-06-01", "end_date": "2026-06-30"},
         )
 
-        self.assertContains(response, "Donation: 700.00 TRY")
-        self.assertContains(response, "Rent: 75.00 TRY")
-        self.assertNotContains(response, "Donation: 1000.00 TRY")
+        self.assertContains(response, "Donation")
+        self.assertContains(response, "700.00 TRY")
+        self.assertContains(response, "Rent")
+        self.assertContains(response, "75.00 TRY")
+        self.assertNotContains(response, "1,000.00 TRY")
 
     def test_report_dashboard_displays_empty_income_category_message_when_no_income(self):
         self.create_transaction(

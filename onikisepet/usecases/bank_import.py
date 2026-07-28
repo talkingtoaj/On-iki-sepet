@@ -184,8 +184,29 @@ def enrich_row_description(row_values):
     return transaction_type or description
 
 
+def classification_from_hareket_tipi(raw_value):
+    normalized = normalize_header(raw_value)
+    if not normalized:
+        return {}
+
+    rules = (
+        (("gider_transfer", "gidertransfer"), Transaction.TransactionType.TRANSFER, False),
+        (("gelir_transfer", "gelirtransfer"), Transaction.TransactionType.TRANSFER, True),
+        (("gider", "harcama"), Transaction.TransactionType.EXPENSE, False),
+        (("gelir",), Transaction.TransactionType.INCOME, False),
+    )
+    for aliases, transaction_type, is_incoming in rules:
+        if normalized in aliases:
+            return {
+                "transaction_type": transaction_type,
+                "is_incoming_transfer": is_incoming,
+            }
+    return {}
+
+
 def apply_import_defaults(row_values, *, default_account, default_currency):
     row_values = dict(row_values)
+    row_values["hareket_tipi"] = str(row_values.get("transaction_type") or "").strip()
     if default_account is not None and not row_values.get("account"):
         row_values["account"] = default_account.name
     if default_currency and not row_values.get("currency"):
@@ -251,11 +272,15 @@ def parse_row_values(row_values, *, row_number, accounts_by_name):
         errors.append(exc.messages[0])
 
     description = str(row_values.get("description") or "").strip()
+    hareket_tipi = str(
+        row_values.get("hareket_tipi") or row_values.get("transaction_type") or ""
+    ).strip()
 
     if errors:
         return {
             "row_number": row_number,
             "description": description,
+            "hareket_tipi": hareket_tipi,
             "parse_error": "; ".join(errors),
         }
 
@@ -263,6 +288,7 @@ def parse_row_values(row_values, *, row_number, accounts_by_name):
         return {
             "row_number": row_number,
             "description": description,
+            "hareket_tipi": hareket_tipi,
             "parse_error": (
                 f"Hesap para birimi ({parsed_account.currency}) "
                 f"satırdaki para birimi ({parsed_currency}) ile uyuşmuyor."
@@ -276,6 +302,7 @@ def parse_row_values(row_values, *, row_number, accounts_by_name):
         "amount": parsed_amount,
         "currency": parsed_currency,
         "account": parsed_account,
+        "hareket_tipi": hareket_tipi,
         "parse_error": "",
     }
 
@@ -413,9 +440,13 @@ def create_import_from_upload(uploaded_file, user, *, default_account=None):
         for row_data in parsed_rows:
             classification = {}
             if not row_data.get("parse_error"):
-                classification = default_classification_for_account(
-                    row_data.get("account"),
+                classification = classification_from_hareket_tipi(
+                    row_data.get("hareket_tipi"),
                 )
+                if not classification.get("transaction_type"):
+                    classification = default_classification_for_account(
+                        row_data.get("account"),
+                    )
             rows_to_create.append(
                 BankStatementRow(
                     bank_statement_import=bank_import,
@@ -428,6 +459,10 @@ def create_import_from_upload(uploaded_file, user, *, default_account=None):
                     parse_error=row_data.get("parse_error", ""),
                     transaction_type=classification.get("transaction_type", ""),
                     category=classification.get("category"),
+                    is_incoming_transfer=classification.get(
+                        "is_incoming_transfer",
+                        False,
+                    ),
                 )
             )
         BankStatementRow.objects.bulk_create(rows_to_create)
@@ -532,6 +567,9 @@ def build_transaction_from_row(row, user):
     elif row.transaction_type == Transaction.TransactionType.EXPENSE:
         transaction_kwargs["source_account"] = row.account
         transaction_kwargs["category"] = row.category
+    elif row.is_incoming_transfer:
+        transaction_kwargs["source_account"] = row.target_account
+        transaction_kwargs["target_account"] = row.account
     else:
         transaction_kwargs["source_account"] = row.account
         transaction_kwargs["target_account"] = row.target_account

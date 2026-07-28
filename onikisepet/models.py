@@ -441,6 +441,7 @@ class BankStatementRow(models.Model):
         null=True,
         blank=True,
     )
+    is_incoming_transfer = models.BooleanField(default=False)
     payee = models.CharField(max_length=150, blank=True)
     is_skipped = models.BooleanField(default=False)
     parse_error = models.TextField(blank=True)

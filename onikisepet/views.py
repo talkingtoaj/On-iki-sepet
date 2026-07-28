@@ -198,12 +198,12 @@ def _build_transaction_list_context(request):
     }
 
 
-def _top_expense_category_bars(expense_totals_by_category, limit=5):
+def _category_bars(totals_by_category):
     sorted_items = sorted(
-        expense_totals_by_category,
+        totals_by_category,
         key=lambda item: item["total"],
         reverse=True,
-    )[:limit]
+    )
     if not sorted_items:
         return []
 
@@ -253,7 +253,8 @@ def _build_report_context(request):
     expense_totals_by_category = (
         financial_calculations.calculate_expense_totals_by_category(transactions)
     )
-    expense_category_bars = _top_expense_category_bars(expense_totals_by_category)
+    income_category_bars = _category_bars(income_totals_by_category)
+    expense_category_bars = _category_bars(expense_totals_by_category)
     account_balances = [
         {
             "account": account,
@@ -268,6 +269,7 @@ def _build_report_context(request):
         "transfer_report": transfer_report,
         "income_totals_by_category": income_totals_by_category,
         "expense_totals_by_category": expense_totals_by_category,
+        "income_category_bars": income_category_bars,
         "expense_category_bars": expense_category_bars,
         "account_balances": account_balances,
         "start_date": start_date,
