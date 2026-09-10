@@ -1,0 +1,130 @@
+name: CI
+
+# Triggers are events, not a calendar: pull requests, the release branch, and a
+# manual button. No scheduled runs.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A force-push should supersede the previous run rather than race it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        # --locked fails if uv.lock has drifted from pyproject.toml, so a
+        # dependency added without re-locking is caught here rather than
+        # producing a different dependency set on someone else's machine.
+        run: uv sync --locked
+
+      - name: ruff
+        run: uv run ruff check onikisepet config
+
+  test:
+    name: Tests (SQLite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check for model changes with no migration
+        # Catches a field or constraint edited without makemigrations, which
+        # would otherwise only surface as a runtime error after deploy.
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Run the test suite
+        # No app label. `manage.py test` discovers everything, so a test added
+        # outside the onikisepet package still runs; passing `onikisepet` here
+        # would silently drop it. Discovery parity was verified when this
+        # workflow was written (414 tests either way).
+        run: uv run python manage.py test
+
+  test-postgres:
+    name: Tests (PostgreSQL)
+    # Production runs on PostgreSQL, so the suite has to pass there too. This
+    # is the same 414 tests on a different engine, not a subset: no test lives
+    # only here. It needs a service container, so it gates the release branch
+    # rather than every pull request.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: onikisepet
+          POSTGRES_USER: onikisepet
+          POSTGRES_PASSWORD: onikisepet
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_DB: onikisepet
+      POSTGRES_USER: onikisepet
+      POSTGRES_PASSWORD: onikisepet
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Confirm the suite will really run on PostgreSQL
+        # Without this the job could pass while testing nothing it claims to.
+        # The settings fall back to SQLite whenever POSTGRES_DB is unset, so a
+        # broken service container or a renamed variable would produce a green
+        # run against the wrong engine.
+        run: |
+          uv run python -c "
+          import os, django
+          os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+          django.setup()
+          from django.conf import settings
+          engine = settings.DATABASES['default']['ENGINE']
+          if 'postgresql' not in engine:
+              print('::error::Expected PostgreSQL but settings resolved to '
+                    + engine + '. This job would have passed while testing '
+                    + 'the wrong database engine.')
+              raise SystemExit(1)
+          print('Database engine:', engine)
+          "
+
+      - name: Run the test suite
+        run: uv run python manage.py test

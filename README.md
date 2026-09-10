@@ -37,6 +37,20 @@ uv run python manage.py test onikisepet.tests.test_x      # one focused file
 
 The project follows the test-first rules in `onikisepet/docs/standards.md`.
 Financial correctness is the highest priority; do not move on while tests fail.
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on pull requests to `main`, on pushes to
+`main`, and on demand via the Actions tab. There are no scheduled runs.
+
+| Job | When | What |
+| --- | --- | --- |
+| Lint | every PR and push | `ruff check`, and `uv sync --locked` to catch a dependency change without a re-lock |
+| Tests (SQLite) | every PR and push | Missing-migration check, then the full suite |
+| Tests (PostgreSQL) | pushes to `main` only | The same suite against the engine production uses |
+
+The PostgreSQL job asserts it really resolved to PostgreSQL before running,
+because the settings fall back to SQLite when `POSTGRES_DB` is unset and the
+job would otherwise pass while testing the wrong engine.
 
 
 ## Roles
