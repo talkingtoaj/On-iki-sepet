@@ -44,9 +44,9 @@ retained in the image's runtime configuration.
 
 ## Database lineage
 
-**This code deploys onto a fresh database, not the instance currently serving
-the church.** That is a decision, not an accident, and it must hold until
-someone deliberately revisits it.
+**This code needs an empty database, and it will not migrate one that belongs
+to the other lineage.** That is enforced in the deploy pipeline, not just
+written down here, because the failure it prevents is destructive.
 
 The collaborator's branch and this one both migrated from a common ancestor at
 `0006`, then diverged. Migration numbers `0007` through `0011` exist in both
@@ -78,21 +78,104 @@ committed to the live database. A deploy would leave the church's production
 schema half-migrated onto a lineage it does not belong to, with a failed build
 and no automatic rollback of what already applied.
 
-So: a fresh database, provisioned per **First-time setup** below. The deployed
-instance is left untouched, and no reconciling migration is written.
+### The decision
 
-Two consequences worth stating plainly:
+**The existing `oniki_sepet` database is wiped and rebuilt from this lineage,
+and this lineage deploys over the existing `kut-finans` Cloud Run service.**
+Names stay as they are, so no connection strings change.
 
-- **The data in the deployed instance does not come across.** If any of it is
-  to be kept, it has to be exported and re-entered against this schema
-  deliberately, because the two schemas disagree about what a transaction is.
-- **`cloudbuild.yaml` from the collaborator's `main` will not deploy this
-  code.** It sets `DJANGO_SETTINGS_MODULE=config.production_settings` and a
-  single `DATABASE_URL`; this lineage has no `production_settings` module and
-  reads `DJANGO_ENV` plus discrete `POSTGRES_*` variables. It also names the
-  live Cloud SQL instance and the running Cloud Run service. A pipeline for
-  this lineage needs its own database name, and confirmation of whether it
-  replaces the existing Cloud Run service or stands up a second one.
+Be clear about what that costs: **the deployed church finance data is
+destroyed.** It is not migrated, and there is no reconciling migration. Anything
+in there that matters must be exported and re-entered against this schema by
+hand, because the two schemas disagree about what a transaction is. The
+collaborator owns that instance, so they need to have agreed before the drop.
+
+The Cloud Build trigger `on-iki-sepet` is deliberately **left enabled**. It
+watches `^main$` on `talkingtoaj/On-iki-sepet` and runs `cloudbuild.yaml`, so a
+merge to `main` deploys.
+
+### Why ordering is safety-critical, and what protects it
+
+With the trigger enabled, the wipe must happen **before** anything reaches
+`main`. Merge first and the migrate step meets the collaborator's schema and
+half-migrates it, as above.
+
+That ordering is not left to whoever is holding the mouse. `cloudbuild.yaml`
+runs a `check-lineage` step before `migrate`:
+
+```bash
+uv run python manage.py check_database_lineage
+```
+
+It compares the migrations recorded in the database against the migration files
+in this branch and exits non-zero if the database has any this branch does not
+contain. So merging before the wipe produces a **failed build that has written
+nothing**, rather than a half-migrated ledger. The logic is in
+`onikisepet/usecases/database_lineage.py` and covered by
+`onikisepet/tests/test_database_lineage.py`.
+
+Run it by hand against Cloud SQL any time you want to know which lineage a
+database is on.
+
+### Prerequisites before the first deploy
+
+`cloudbuild.yaml` needs two secrets that do not exist yet, and three
+substitutions the trigger must supply. It intentionally gives the mail
+substitutions no defaults: an unset one fails the build while it is still
+parsing, which is far better than a container that boots, fails
+`check --deploy`, and never serves.
+
+The Postgres password is already inside the old `oniki-sepet-database-url`
+secret. Copy it across without printing it:
+
+```bash
+gcloud secrets versions access latest --secret=oniki-sepet-database-url \
+  | sed -E 's|^.*://[^:]+:([^@]+)@.*$|\1|' \
+  | tr -d '\n' \
+  | gcloud secrets create oniki-sepet-postgres-password --data-file=-
+
+# The mail account password for password-reset delivery
+printf '%s' 'THE_SMTP_PASSWORD' \
+  | gcloud secrets create oniki-sepet-email-password --data-file=-
+```
+
+Then set `_EMAIL_HOST`, `_EMAIL_USER` and `_FROM_EMAIL` on the trigger:
+
+```bash
+gcloud builds triggers update github on-iki-sepet \
+  --update-substitutions=_EMAIL_HOST=smtp.example.org,_EMAIL_USER=finance@example.org,_FROM_EMAIL=finance@example.org
+```
+
+### Cutover, in order
+
+Do not reorder these. Steps 1 and 2 are the ones that cannot be undone.
+
+```bash
+# 1. Back up what is about to be destroyed. Verify the file before continuing.
+gcloud sql export sql lb-db2 gs://YOUR_BACKUP_BUCKET/oniki_sepet-precutover.sql.gz \
+  --database=oniki_sepet --project=lifebalance-nuxt
+
+# 2. Drop and recreate the database. This destroys the deployed data.
+gcloud sql databases delete oniki_sepet --instance=lb-db2 --project=lifebalance-nuxt
+gcloud sql databases create oniki_sepet --instance=lb-db2 --project=lifebalance-nuxt
+
+# 3. Confirm the database is now on no lineage at all. Expect a clean pass.
+#    Run from a machine with the Cloud SQL proxy up.
+uv run python manage.py check_database_lineage
+
+# 4. Merge the PR. The trigger builds, re-checks the lineage, migrates the
+#    empty database and deploys over kut-finans.
+
+# 5. Seed the empty database and create the first account.
+uv run python manage.py seed_roles
+uv run python manage.py seed_kut_data
+uv run python manage.py createsuperuser
+```
+
+Then assign roles in the Django admin, as under **First-time setup** below.
+
+If step 4 fails on `check-lineage`, the wipe in step 2 did not happen or did not
+take. Nothing has been written; fix the database and re-run the build.
 
 ## Migrations
 
