@@ -77,7 +77,7 @@ jobs:
   test-postgres:
     name: Tests (PostgreSQL)
     # Production runs on PostgreSQL, so the suite has to pass there too. This
-    # is the same 414 tests on a different engine, not a subset: no test lives
+    # is the same 613 tests on a different engine, not a subset: no test lives
     # only here. It needs a service container, so it gates the release branch
     # rather than every pull request.
     if: github.event_name != 'pull_request'
