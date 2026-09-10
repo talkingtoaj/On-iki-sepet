@@ -119,31 +119,59 @@ database is on.
 
 ### Prerequisites before the first deploy
 
-`cloudbuild.yaml` needs two secrets that do not exist yet, and three
-substitutions the trigger must supply. It intentionally gives the mail
-substitutions no defaults: an unset one fails the build while it is still
-parsing, which is far better than a container that boots, fails
-`check --deploy`, and never serves.
+One secret, and nothing else. Everything the pipeline needs is either an
+existing secret or a substitution with a default.
 
 The Postgres password is already inside the old `oniki-sepet-database-url`
-secret. Copy it across without printing it:
+secret, which stores a full connection URL. Copy just the password across
+without ever printing it:
 
 ```bash
 gcloud secrets versions access latest --secret=oniki-sepet-database-url \
-  | sed -E 's|^.*://[^:]+:([^@]+)@.*$|\1|' \
+  | sed -E 's|^[a-z+]+://[^:]+:([^@]+)@.*$|\1|' \
   | tr -d '\n' \
   | gcloud secrets create oniki-sepet-postgres-password --data-file=-
-
-# The mail account password for password-reset delivery
-printf '%s' 'THE_SMTP_PASSWORD' \
-  | gcloud secrets create oniki-sepet-email-password --data-file=-
 ```
 
-Then set `_EMAIL_HOST`, `_EMAIL_USER` and `_FROM_EMAIL` on the trigger:
+No IAM work is needed: both the Cloud Build service account and the Cloud Run
+runtime service account already hold `roles/secretmanager.secretAccessor` at
+the project level, so a new secret in this project is readable by both.
+
+The old `oniki-sepet-database-url` secret is left in place. This lineage does
+not read it, but it is the only copy of the credentials for the database being
+replaced, so it should outlive the cutover.
+
+### Mail
+
+**There is no mail infrastructure, and none is configured.** The deploy sets
+`DJANGO_EMAIL_BACKEND` to Django's console backend, so messages are written to
+the Cloud Run log rather than sent.
+
+The practical consequence: **password reset does not deliver.** The reset flow
+still works and still generates a valid link — it just arrives in the log
+instead of an inbox, where someone with log access can retrieve it. That is a
+deliberate stopgap, not an oversight, and it matches what the previous
+deployment did in effect, which had no mail settings at all.
+
+`config/env.py` refuses to start in production only when the *SMTP* backend is
+selected with no host, so naming a non-SMTP backend is the supported way to run
+without mail. Do not leave `_EMAIL_BACKEND` unset and hope; an SMTP backend
+with no host stops the container at boot.
+
+When real mail arrives, three things change together:
 
 ```bash
+# 1. Store the mail account password
+printf '%s' 'THE_SMTP_PASSWORD' \
+  | gcloud secrets create oniki-sepet-email-password --data-file=-
+
+# 2. Add it to the deploy step's --set-secrets in cloudbuild.yaml as
+#    DJANGO_EMAIL_HOST_PASSWORD, and add DJANGO_EMAIL_HOST and
+#    DJANGO_EMAIL_HOST_USER to --set-env-vars.
+
+# 3. Point the backend at SMTP and set a real from-address
 gcloud builds triggers update github on-iki-sepet \
-  --update-substitutions=_EMAIL_HOST=smtp.example.org,_EMAIL_USER=finance@example.org,_FROM_EMAIL=finance@example.org
+  --update-substitutions=^@^_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend@_FROM_EMAIL=finance@yourdomain.org
 ```
 
 ### Cutover, in order

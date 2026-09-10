@@ -128,16 +128,37 @@ class CloudBuildPipelineTests(TestCase):
         self.assertIn("DJANGO_ENV=production", steps)
         self.assertIn("POSTGRES_DB=", steps)
 
-    def test_the_mail_substitutions_have_no_defaults(self):
-        """An unset substitution fails the build while it is still parsing. A
-        defaulted-to-empty mail host instead produces a container that boots,
-        fails check --deploy and never serves.
+    def test_the_deploy_declares_a_mail_backend_explicitly(self):
+        """There is no mail infrastructure yet, and config/env.py refuses to
+        import settings in production with the SMTP backend and no host. The
+        deploy has to name a backend, or the container boots, fails the
+        entrypoint's check --deploy, and never serves.
+        """
+        deploy_step = self.text.split("- id: deploy")[1]
+
+        self.assertIn("DJANGO_EMAIL_BACKEND=${_EMAIL_BACKEND}", deploy_step)
+
+    def test_the_default_mail_backend_does_not_need_a_host(self):
+        """Whatever the default is, it must not be the SMTP backend: that is
+        the one combination config/env.py rejects without a host.
         """
         declared = self.text.split("availableSecrets:")[0]
 
-        for name in ["_EMAIL_HOST", "_EMAIL_USER", "_FROM_EMAIL"]:
-            self.assertIn(f"${{{name}}}", self.text)
-            self.assertNotIn(f"{name}:", declared)
+        self.assertIn("_EMAIL_BACKEND:", declared)
+        self.assertNotIn("_EMAIL_BACKEND: django.core.mail.backends.smtp", declared)
+
+    def test_the_build_steps_never_send_mail(self):
+        """check-lineage and migrate run with DJANGO_ENV=production. They have
+        no reason to send mail and must not be blocked by its absence.
+        """
+        before_deploy = self.text.split("- id: deploy")[0]
+
+        self.assertEqual(
+            before_deploy.count(
+                "DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend"
+            ),
+            2,
+        )
 
     def test_migrations_do_not_run_in_the_deploy_step(self):
         """Migrations belong in their own pre-deploy step, not bundled into the

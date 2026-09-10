@@ -17,6 +17,18 @@ substitutions:
   _DB_NAME: oniki_sepet
   _DB_USER: oniki_sepet_app
   _BUCKET: kut-finans-media
+  # No mail infrastructure yet. The console backend prints messages to the
+  # Cloud Run log instead of sending them, which keeps password reset
+  # discoverable (an admin can read the link out of the log) without pretending
+  # mail works. config/env.py only refuses to start when the SMTP backend is
+  # selected with no host, so naming a non-SMTP backend here is the supported
+  # way to run without mail.
+  #
+  # To switch to real mail: set _EMAIL_BACKEND to
+  # django.core.mail.backends.smtp.EmailBackend and add DJANGO_EMAIL_HOST,
+  # DJANGO_EMAIL_HOST_USER and a DJANGO_EMAIL_HOST_PASSWORD secret below.
+  _EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+  _FROM_EMAIL: onikisepet@example.org
 
 availableSecrets:
   secretManager:
@@ -140,8 +152,8 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --add-cloudsql-instances=$PROJECT_ID:${_REGION}:${_INSTANCE}
-      - --set-secrets=DJANGO_SECRET_KEY=oniki-sepet-django-secret-key:latest,POSTGRES_PASSWORD=oniki-sepet-postgres-password:latest,DJANGO_EMAIL_HOST_PASSWORD=oniki-sepet-email-password:latest
-      - --set-env-vars=^@^DJANGO_ENV=production@DJANGO_ALLOWED_HOSTS=.run.app@DJANGO_CSRF_TRUSTED_ORIGINS=https://*.run.app@POSTGRES_DB=${_DB_NAME}@POSTGRES_USER=${_DB_USER}@POSTGRES_HOST=/cloudsql/$PROJECT_ID:${_REGION}:${_INSTANCE}@GS_BUCKET_NAME=${_BUCKET}@DJANGO_SECURE_SSL_REDIRECT=true@DJANGO_EMAIL_HOST=${_EMAIL_HOST}@DJANGO_EMAIL_HOST_USER=${_EMAIL_USER}@DJANGO_DEFAULT_FROM_EMAIL=${_FROM_EMAIL}
+      - --set-secrets=DJANGO_SECRET_KEY=oniki-sepet-django-secret-key:latest,POSTGRES_PASSWORD=oniki-sepet-postgres-password:latest
+      - --set-env-vars=^@^DJANGO_ENV=production@DJANGO_ALLOWED_HOSTS=.run.app@DJANGO_CSRF_TRUSTED_ORIGINS=https://*.run.app@POSTGRES_DB=${_DB_NAME}@POSTGRES_USER=${_DB_USER}@POSTGRES_HOST=/cloudsql/$PROJECT_ID:${_REGION}:${_INSTANCE}@GS_BUCKET_NAME=${_BUCKET}@DJANGO_SECURE_SSL_REDIRECT=true@DJANGO_EMAIL_BACKEND=${_EMAIL_BACKEND}@DJANGO_DEFAULT_FROM_EMAIL=${_FROM_EMAIL}
       - --memory=512Mi
       - --cpu=1
       - --min-instances=0
