@@ -42,6 +42,58 @@ The build collects static files and compiles the Turkish catalogue, so neither
 happens on a cold start. The placeholder secret used during the build is not
 retained in the image's runtime configuration.
 
+## Database lineage
+
+**This code deploys onto a fresh database, not the instance currently serving
+the church.** That is a decision, not an accident, and it must hold until
+someone deliberately revisits it.
+
+The collaborator's branch and this one both migrated from a common ancestor at
+`0006`, then diverged. Migration numbers `0007` through `0011` exist in both
+lineages describing different schema changes:
+
+| Number | This lineage | Deployed lineage |
+| --- | --- | --- |
+| `0007` | `exchangerate` | `auditlog` |
+| `0008` | transaction options, receipt file | `transaction_approval` |
+| `0009` | `is_void`, `void_reason` | `profile` |
+| `0010` | category and receipt alterations | `receipt_file_type` |
+| `0011` | `bankstatementimport`, `bankstatementrow` | `bank_statement_import` |
+
+Theirs continues to `0020`; ours ends at `0011`. The numbers collide but the
+migration *names* do not, and Django records applied migrations by name. So
+running `migrate` from this lineage against the deployed database would not
+skip anything: it would find our `0006_receipt` applied, then try to apply
+`0007_exchangerate` onward on top of their schema.
+
+The first few would succeed, because `exchangerate` and the void columns do not
+exist in their lineage. `0011` would then fail, because both lineages declare
+models named `BankStatementImport` and `BankStatementRow` in the `onikisepet`
+app with no `db_table` override, so both want the same two tables and theirs
+are already there.
+
+That is the dangerous part. On PostgreSQL each migration commits in its own
+transaction, so the failure arrives *after* `0007`-`0010` have already been
+committed to the live database. A deploy would leave the church's production
+schema half-migrated onto a lineage it does not belong to, with a failed build
+and no automatic rollback of what already applied.
+
+So: a fresh database, provisioned per **First-time setup** below. The deployed
+instance is left untouched, and no reconciling migration is written.
+
+Two consequences worth stating plainly:
+
+- **The data in the deployed instance does not come across.** If any of it is
+  to be kept, it has to be exported and re-entered against this schema
+  deliberately, because the two schemas disagree about what a transaction is.
+- **`cloudbuild.yaml` from the collaborator's `main` will not deploy this
+  code.** It sets `DJANGO_SETTINGS_MODULE=config.production_settings` and a
+  single `DATABASE_URL`; this lineage has no `production_settings` module and
+  reads `DJANGO_ENV` plus discrete `POSTGRES_*` variables. It also names the
+  live Cloud SQL instance and the running Cloud Run service. A pipeline for
+  this lineage needs its own database name, and confirmation of whether it
+  replaces the existing Cloud Run service or stands up a second one.
+
 ## Migrations
 
 **Run migrations as a pre-deploy step, never from the container entrypoint.**
