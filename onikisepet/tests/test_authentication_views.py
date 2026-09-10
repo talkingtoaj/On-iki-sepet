@@ -1,6 +1,9 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 from django.conf import settings
 from django.shortcuts import resolve_url
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from onikisepet.usecases.roles import VIEWER
@@ -8,6 +11,7 @@ from onikisepet.usecases.roles import VIEWER
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class LoginPageTests(TransactionTestMixin, TestCase):
     """Before this, LOGIN_URL pointed at /accounts/login/, which collided with
     the bank-account list and returned 404. Users who were not superusers had
@@ -75,6 +79,7 @@ class LoginPageTests(TransactionTestMixin, TestCase):
         self.assertNotIn("_auth_user_id", self.client.session)
 
 
+@override_settings(LANGUAGE_CODE="en")
 class HomePageTests(TransactionTestMixin, TestCase):
     """The site root used to 404."""
 
@@ -94,6 +99,7 @@ class HomePageTests(TransactionTestMixin, TestCase):
         self.assertContains(response, "Sign in")
 
 
+@override_settings(LANGUAGE_CODE="en")
 class NavigationTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.user = self.create_user("nav_user", is_superuser=True)

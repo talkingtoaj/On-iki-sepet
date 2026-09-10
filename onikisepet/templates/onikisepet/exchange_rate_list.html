@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Exchange Rates{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Exchange Rates" %}{% endblock %}
 {% block content %}
-<h1>Exchange Rates</h1>
+<h1>{% translate "Exchange Rates" %}</h1>
 
-<p>Rates convert one unit of a foreign currency into {{ base_currency }}.</p>
+<p>{% blocktranslate %}Rates convert one unit of a foreign currency into {{ base_currency }}.{% endblocktranslate %}</p>
 
 {% if exchange_rates %}
   <ul>
@@ -15,8 +16,10 @@
     {% endfor %}
   </ul>
 {% else %}
-  <p>No exchange rates recorded yet.</p>
+  <p>{% translate "No exchange rates recorded yet." %}</p>
 {% endif %}
 
-<p><a href="{% url 'exchange_rate_create' %}">Add exchange rate</a></p>
+{% if perms.onikisepet.add_exchangerate %}
+  <p><a href="{% url 'exchange_rate_create' %}">{% translate "Add exchange rate" %}</a></p>
+{% endif %}
 {% endblock %}

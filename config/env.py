@@ -164,3 +164,21 @@ def get_security_settings(env):
         "SECURE_CONTENT_TYPE_NOSNIFF": True,
         "X_FRAME_OPTIONS": "DENY",
     }
+
+
+def check_email_configuration(env, backend, host):
+    """Refuse to start in production with SMTP configured but no host.
+
+    Password reset is the only way back into an account. If the mail settings
+    are wrong the reset silently goes nowhere, and the failure only shows up
+    when somebody is already locked out.
+    """
+    if not is_production(env):
+        return
+
+    if backend.endswith("smtp.EmailBackend") and not host:
+        raise ImproperlyConfigured(
+            "DJANGO_EMAIL_HOST must be set in production, or password reset "
+            "emails will not be delivered. Set DJANGO_EMAIL_BACKEND "
+            "explicitly if you intend not to send mail."
+        )

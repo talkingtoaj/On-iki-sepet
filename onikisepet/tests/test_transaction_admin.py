@@ -1,11 +1,12 @@
 from decimal import Decimal
 
 from django.contrib import admin
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionAdminTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.user = self.create_user("admin_user", is_superuser=True)
@@ -129,6 +130,7 @@ class TransactionAdminTests(TransactionTestMixin, TestCase):
         self.assertEqual(transaction.created_by, self.user)
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionAdminAuditTests(TransactionTestMixin, TestCase):
     """The admin is a write path like any other, so it must not be able to
     change a transaction without leaving an audit row.

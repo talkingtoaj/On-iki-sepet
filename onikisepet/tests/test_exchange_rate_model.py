@@ -2,11 +2,12 @@ from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import ExchangeRateTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class ExchangeRateModelTests(ExchangeRateTestMixin, TestCase):
     """The ExchangeRate model stores what one unit of a foreign currency is
     worth in the base currency (TRY) on a given day. Reports use it to build a

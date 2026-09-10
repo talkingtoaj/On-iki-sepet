@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Waiting for access" %}{% endblock %}
+{% block content %}
+<h1>{% translate "Waiting for access" %}</h1>
+
+<p>{% blocktranslate with username=user.get_username %}You are signed in as {{ username }}, but no role has been assigned to your account yet.{% endblocktranslate %}</p>
+
+<p>{% translate "The church books include donor records, so access is granted deliberately rather than automatically. Please ask an administrator to give your account a role." %}</p>
+
+<form method="post" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit">{% translate "Sign out" %}</button>
+</form>
+{% endblock %}

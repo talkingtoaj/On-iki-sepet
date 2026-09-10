@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Statement imports" %}{% endblock %}
+{% block content %}
+<h1>{% translate "Statement imports" %}</h1>
+
+{% if messages %}
+  {% for message in messages %}<p><strong>{{ message }}</strong></p>{% endfor %}
+{% endif %}
+
+{% if statement_imports %}
+  <ul>
+    {% for item in statement_imports %}
+      <li>
+        <a href="{% url 'import_preview' item.pk %}">{{ item.original_filename }}</a>
+        &mdash; {{ item.account.name }}
+        &mdash; {{ item.get_status_display }}
+        &mdash; {% blocktranslate with who=item.uploaded_by when=item.uploaded_at %}{{ who }} on {{ when }}{% endblocktranslate %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>{% translate "No statements have been imported yet." %}</p>
+{% endif %}
+
+{% if perms.onikisepet.add_transaction %}
+  <p><a href="{% url 'import_new' %}">{% translate "Import a bank statement" %}</a></p>
+{% endif %}
+{% endblock %}

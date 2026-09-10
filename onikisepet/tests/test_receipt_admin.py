@@ -1,3 +1,6 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 import tempfile
 from decimal import Decimal
 
@@ -9,6 +12,7 @@ from onikisepet.models import Receipt
 from .helpers import ReceiptFileTestMixin, TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class ReceiptAdminTests(TestCase):
     def get_receipt_admin(self):
         return admin.site._registry[Receipt]
@@ -59,7 +63,7 @@ class ReceiptAdminTests(TestCase):
         self.assertEqual(list(receipt_admin.readonly_fields), expected_readonly_fields)
 
 
-@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp(), LANGUAGE_CODE="en")
 class ReceiptAdminFileLinkTests(
     ReceiptFileTestMixin, TransactionTestMixin, TestCase
 ):

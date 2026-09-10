@@ -9,11 +9,12 @@ tested directly instead of by reloading the settings module.
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from config import env as env_helpers
 
 
+@override_settings(LANGUAGE_CODE="en")
 class AsBoolTests(TestCase):
     def test_truthy_values(self):
         for value in ["1", "true", "True", "TRUE", "yes", "on"]:
@@ -28,6 +29,7 @@ class AsBoolTests(TestCase):
         self.assertFalse(env_helpers.as_bool(None, default=False))
 
 
+@override_settings(LANGUAGE_CODE="en")
 class EnvironmentTests(TestCase):
     def test_default_environment_is_development(self):
         self.assertEqual(env_helpers.get_environment({}), "development")
@@ -44,6 +46,7 @@ class EnvironmentTests(TestCase):
             env_helpers.get_environment({"DJANGO_ENV": "prod"})
 
 
+@override_settings(LANGUAGE_CODE="en")
 class DebugTests(TestCase):
     def test_debug_is_on_by_default_in_development(self):
         self.assertTrue(env_helpers.get_debug({}))
@@ -60,6 +63,7 @@ class DebugTests(TestCase):
         )
 
 
+@override_settings(LANGUAGE_CODE="en")
 class SecretKeyTests(TestCase):
     def test_development_falls_back_to_a_clearly_marked_dev_key(self):
         key = env_helpers.get_secret_key({})
@@ -106,6 +110,7 @@ class SecretKeyTests(TestCase):
         )
 
 
+@override_settings(LANGUAGE_CODE="en")
 class AllowedHostsTests(TestCase):
     def test_development_defaults_to_localhost(self):
         hosts = env_helpers.get_allowed_hosts({})
@@ -132,6 +137,7 @@ class AllowedHostsTests(TestCase):
         self.assertEqual(origins, ["https://a.example", "https://b.example"])
 
 
+@override_settings(LANGUAGE_CODE="en")
 class DatabaseConfigTests(TestCase):
     base_dir = Path("/srv/app")
 
@@ -182,6 +188,7 @@ class DatabaseConfigTests(TestCase):
             )
 
 
+@override_settings(LANGUAGE_CODE="en")
 class SecuritySettingsTests(TestCase):
     def test_development_does_not_force_https(self):
         settings = env_helpers.get_security_settings({})
@@ -212,6 +219,7 @@ class SecuritySettingsTests(TestCase):
         )
 
 
+@override_settings(LANGUAGE_CODE="en")
 class DeploymentCheckTests(TestCase):
     """End-to-end proof that a production configuration passes Django's own
     deployment checklist. The unit tests above cover the rules; this catches a
@@ -244,6 +252,7 @@ class DeploymentCheckTests(TestCase):
             "POSTGRES_USER": "app",
             "POSTGRES_PASSWORD": "secret",
             "POSTGRES_HOST": "/cloudsql/project:europe-west1:onikisepet",
+            "DJANGO_EMAIL_HOST": "smtp.example.org",
         }
         environment.update(overrides)
         return environment
@@ -270,8 +279,60 @@ class DeploymentCheckTests(TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("DJANGO_ALLOWED_HOSTS", result.stderr)
 
+    def test_production_refuses_to_start_without_a_mail_host(self):
+        """Password reset is the only route back into a locked-out account, so
+        silently having nowhere to send it is not an acceptable default.
+        """
+        result = self._run_check(self._production_env(DJANGO_EMAIL_HOST=""))
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("DJANGO_EMAIL_HOST", result.stderr)
+
+    def test_production_allows_an_explicit_no_mail_backend(self):
+        """Opting out explicitly is fine; doing so by accident is not."""
+        result = self._run_check(
+            self._production_env(
+                DJANGO_EMAIL_HOST="",
+                DJANGO_EMAIL_BACKEND="django.core.mail.backends.dummy.EmailBackend",
+            )
+        )
+
+        self.assertEqual(
+            result.returncode, 0, f"{result.stdout}\n{result.stderr}"
+        )
+
     def test_production_refuses_to_start_on_sqlite(self):
         result = self._run_check(self._production_env(POSTGRES_DB=""))
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("POSTGRES_DB", result.stderr)
+
+
+@override_settings(LANGUAGE_CODE="en")
+class EmailConfigurationTests(TestCase):
+    def test_development_needs_no_mail_host(self):
+        env_helpers.check_email_configuration(
+            {}, "django.core.mail.backends.console.EmailBackend", ""
+        )
+
+    def test_production_smtp_without_a_host_is_refused(self):
+        with self.assertRaises(ImproperlyConfigured):
+            env_helpers.check_email_configuration(
+                {"DJANGO_ENV": "production"},
+                "django.core.mail.backends.smtp.EmailBackend",
+                "",
+            )
+
+    def test_production_smtp_with_a_host_is_accepted(self):
+        env_helpers.check_email_configuration(
+            {"DJANGO_ENV": "production"},
+            "django.core.mail.backends.smtp.EmailBackend",
+            "smtp.example.org",
+        )
+
+    def test_production_with_a_deliberate_dummy_backend_is_accepted(self):
+        env_helpers.check_email_configuration(
+            {"DJANGO_ENV": "production"},
+            "django.core.mail.backends.dummy.EmailBackend",
+            "",
+        )

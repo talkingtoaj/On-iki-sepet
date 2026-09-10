@@ -1,8 +1,10 @@
 from decimal import Decimal
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from .models import Account, Category, ExchangeRate, Transaction, get_base_currency
+from .money_input import LocalizedDecimalField, MoneyField
 from .validators import validate_receipt_file
 
 
@@ -29,16 +31,18 @@ class CategoryForm(forms.ModelForm):
             if clash.exists():
                 self.add_error(
                     "name",
-                    f"A {category_type} category named \u201c{name}\u201d already exists.",
+                    _("A %(type)s category named “%(name)s” already exists.")
+                    % {
+                        "type": Category.CategoryType(category_type).label,
+                        "name": name,
+                    },
                 )
 
         return cleaned_data
 
 
 class AccountForm(forms.ModelForm):
-    opening_balance = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
+    opening_balance = MoneyField(
         min_value=Decimal("0"),
         required=False,
     )
@@ -59,6 +63,7 @@ class AccountForm(forms.ModelForm):
 
 
 class TransactionForm(forms.ModelForm):
+    amount = MoneyField()
     account = forms.ModelChoiceField(
         queryset=Account.objects.all(),
         required=False,
@@ -88,7 +93,7 @@ class TransactionForm(forms.ModelForm):
         category = cleaned_data.get("category")
 
         if amount is not None and amount <= Decimal("0"):
-            self.add_error("amount", "Amount must be greater than 0.")
+            self.add_error("amount", _("Amount must be greater than 0."))
 
         if transaction_type == Transaction.TransactionType.INCOME:
             self._clean_income(cleaned_data, account, category)
@@ -101,7 +106,7 @@ class TransactionForm(forms.ModelForm):
 
     def _clean_income(self, cleaned_data, account, category):
         if account is None:
-            self.add_error("account", "Income transactions require an account.")
+            self.add_error("account", _("Income transactions require an account."))
             return
 
         cleaned_data["target_account"] = account
@@ -115,12 +120,12 @@ class TransactionForm(forms.ModelForm):
         ):
             self.add_error(
                 "category",
-                "Income transactions require an income category.",
+                _("Income transactions require an income category."),
             )
 
     def _clean_expense(self, cleaned_data, account, category):
         if account is None:
-            self.add_error("account", "Expense transactions require an account.")
+            self.add_error("account", _("Expense transactions require an account."))
             return
 
         cleaned_data["source_account"] = account
@@ -134,40 +139,36 @@ class TransactionForm(forms.ModelForm):
         ):
             self.add_error(
                 "category",
-                "Expense transactions require an expense category.",
+                _("Expense transactions require an expense category."),
             )
 
     def _clean_transfer(self, source_account, target_account):
         if source_account is None:
             self.add_error(
                 "source_account",
-                "Transfer transactions require a source account.",
+                _("Transfer transactions require a source account."),
             )
         if target_account is None:
             self.add_error(
                 "target_account",
-                "Transfer transactions require a target account.",
+                _("Transfer transactions require a target account."),
             )
         if source_account is None or target_account is None:
             return
 
         if source_account == target_account:
-            self.add_error("target_account", "Transfer accounts must be different.")
+            self.add_error("target_account", _("Transfer accounts must be different."))
         elif source_account.currency != target_account.currency:
             self.add_error(
                 "target_account",
-                "Cross-currency transfers are not supported in the MVP.",
+                _("Cross-currency transfers are not supported in the MVP."),
             )
 
 
 class CashExpenseForm(forms.Form):
     date = forms.DateField()
     payee = forms.CharField(max_length=150)
-    amount = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        min_value=Decimal("0.01"),
-    )
+    amount = MoneyField(min_value=Decimal("0.01"))
     cash_account = forms.ModelChoiceField(
         queryset=Account.objects.filter(
             account_type=Account.AccountType.CASH,
@@ -208,6 +209,14 @@ class CashExpenseForm(forms.Form):
 
 
 class ExchangeRateForm(forms.ModelForm):
+    # Rates carry six decimal places, so they use the lenient parser without
+    # money's two-place display rounding.
+    rate_to_base = LocalizedDecimalField(
+        max_digits=18,
+        decimal_places=6,
+        min_value=Decimal("0.000001"),
+    )
+
     class Meta:
         model = ExchangeRate
         fields = ["currency", "rate_to_base", "effective_date"]
@@ -229,7 +238,7 @@ class TransactionEditForm(TransactionForm):
 
     change_reason = forms.CharField(
         widget=forms.Textarea(attrs={"rows": 2}),
-        help_text="Why is this being changed? Recorded in the audit trail.",
+        help_text=_("Why is this being changed? Recorded in the audit trail."),
     )
 
     def __init__(self, *args, **kwargs):
@@ -248,18 +257,39 @@ class TransactionEditForm(TransactionForm):
     def clean_change_reason(self):
         reason = (self.cleaned_data.get("change_reason") or "").strip()
         if not reason:
-            raise forms.ValidationError("A reason is required for every change.")
+            raise forms.ValidationError(_("A reason is required for every change."))
         return reason
 
 
 class TransactionVoidForm(forms.Form):
     void_reason = forms.CharField(
         widget=forms.Textarea(attrs={"rows": 2}),
-        help_text="Why is this transaction being voided?",
+        help_text=_("Why is this transaction being voided?"),
     )
 
     def clean_void_reason(self):
         reason = (self.cleaned_data.get("void_reason") or "").strip()
         if not reason:
-            raise forms.ValidationError("A reason is required to void a transaction.")
+            raise forms.ValidationError(_("A reason is required to void a transaction."))
         return reason
+
+
+class BankStatementUploadForm(forms.Form):
+    """Which account the statement belongs to, and the file itself.
+
+    The account is chosen rather than inferred: a statement rarely names the
+    account in a way we could rely on, and posting money to the wrong ledger
+    is much worse than one extra dropdown.
+    """
+
+    account = forms.ModelChoiceField(
+        queryset=Account.objects.filter(is_active=True).exclude(
+            account_type=Account.AccountType.CASH
+        ),
+        label=_("Account"),
+        help_text=_("The account this statement belongs to."),
+    )
+    statement_file = forms.FileField(
+        label=_("Statement file"),
+        help_text=_("A CSV, Excel or PDF export from the bank."),
+    )

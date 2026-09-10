@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group, Permission
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from onikisepet.usecases.roles import (
     DATA_ENTRY,
@@ -10,6 +10,7 @@ from onikisepet.usecases.roles import (
 )
 
 
+@override_settings(LANGUAGE_CODE="en")
 class SeedRolesTests(TestCase):
     """Permissions used to be hardcoded `is_superuser` checks in the views.
     Roles now live in Django's own permission framework so they can be granted
@@ -89,6 +90,7 @@ class SeedRolesTests(TestCase):
         self.assertNotIn("void_transaction", ROLE_PERMISSIONS[DATA_ENTRY])
 
 
+@override_settings(LANGUAGE_CODE="en")
 class SeedRolesCommandTests(TestCase):
     def test_management_command_seeds_the_roles(self):
         from django.core.management import call_command

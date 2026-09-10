@@ -9,6 +9,7 @@ or an SVG with script in it must not get through on the strength of its name.
 import contextlib
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 MAX_RECEIPT_SIZE_BYTES = 10 * 1024 * 1024
 
@@ -56,7 +57,7 @@ def validate_receipt_file(uploaded_file):
 
     if extension not in ALLOWED_RECEIPT_EXTENSIONS:
         raise ValidationError(
-            "Receipts must be a %(allowed)s file.",
+            _("Receipts must be a %(allowed)s file."),
             code="invalid_receipt_extension",
             params={"allowed": ", ".join(ALLOWED_RECEIPT_EXTENSIONS).upper()},
         )
@@ -64,7 +65,7 @@ def validate_receipt_file(uploaded_file):
     size = getattr(uploaded_file, "size", None)
     if size is not None and size > MAX_RECEIPT_SIZE_BYTES:
         raise ValidationError(
-            "Receipts must be %(limit)s MB or smaller.",
+            _("Receipts must be %(limit)s MB or smaller."),
             code="receipt_too_large",
             params={"limit": MAX_RECEIPT_SIZE_BYTES // (1024 * 1024)},
         )
@@ -74,8 +75,10 @@ def validate_receipt_file(uploaded_file):
 
     if not any(header.startswith(prefix) for prefix in expected_prefixes):
         raise ValidationError(
-            "This file is not a valid %(extension)s file. Its contents do not "
-            "match its extension.",
+            _(
+                "This file is not a valid %(extension)s file. Its contents "
+                "do not match its extension."
+            ),
             code="receipt_content_mismatch",
             params={"extension": extension.upper()},
         )

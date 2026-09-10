@@ -1,11 +1,12 @@
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import AccountTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class AccountModelTests(AccountTestMixin, TestCase):
     def test_account_can_be_created_with_cash_type(self):
         account = self.create_account(

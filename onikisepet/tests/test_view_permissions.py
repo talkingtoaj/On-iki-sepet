@@ -9,6 +9,7 @@ from onikisepet.usecases.roles import DATA_ENTRY, TREASURER, VIEWER
 from .helpers import ReceiptFileTestMixin, TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class ViewPermissionMatrixTests(
     ReceiptFileTestMixin, TransactionTestMixin, TestCase

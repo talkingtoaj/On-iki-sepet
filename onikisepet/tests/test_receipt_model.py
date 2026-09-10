@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from .helpers import ReceiptFileTestMixin, TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class ReceiptModelTests(ReceiptFileTestMixin, TransactionTestMixin, TestCase):
     def setUp(self):

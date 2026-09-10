@@ -292,6 +292,13 @@ def calculate_grand_total_in_base(amounts_by_currency, on_date=None):
 
         if currency == base_currency:
             rate, rate_date = Decimal("1"), None
+        elif amount == 0:
+            # Zero converts to zero at any rate, so an empty foreign-currency
+            # account must not mark the total incomplete. The church keeps
+            # empty USD and EUR accounts, and a warning that is permanently on
+            # is a warning nobody reads. No note either: there is no rate to
+            # show and nothing to explain.
+            continue
         else:
             quote = ExchangeRate.quote_for(currency, on_date)
             rate = quote.rate_to_base if quote else None

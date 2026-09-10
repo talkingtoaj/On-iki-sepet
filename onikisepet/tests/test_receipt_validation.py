@@ -18,6 +18,7 @@ from .helpers import (
 )
 
 
+@override_settings(LANGUAGE_CODE="en")
 class ReceiptFileValidatorTests(ReceiptFileTestMixin, TestCase):
     """Receipts carry sensitive financial information and are served back to
     users, so the upload field must accept only the declared formats and must
@@ -98,6 +99,7 @@ class ReceiptFileValidatorTests(ReceiptFileTestMixin, TestCase):
         validate_receipt_file(self.make_receipt_file("RECEIPT.JPG"))
 
 
+@override_settings(LANGUAGE_CODE="en")
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class ReceiptModelValidationTests(
     ReceiptFileTestMixin, TransactionTestMixin, TestCase

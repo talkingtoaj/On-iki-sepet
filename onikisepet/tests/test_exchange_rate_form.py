@@ -1,10 +1,11 @@
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from onikisepet.forms import ExchangeRateForm
 
 
+@override_settings(LANGUAGE_CODE="en")
 class ExchangeRateFormTests(TestCase):
     def _data(self, **overrides):
         data = {

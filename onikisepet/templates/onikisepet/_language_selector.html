@@ -1,0 +1,22 @@
+{% comment %}
+Language selector. Posts to Django's set_language view, which stores the choice
+in the session so it survives across requests. `next` returns the user to the
+page they were on rather than the site root.
+{% endcomment %}
+{% load i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+
+<form action="{% url 'set_language' %}" method="post" class="language-selector">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <label for="language-select">{% translate "Language" %}</label>
+  <select id="language-select" name="language" onchange="this.form.submit()">
+    {% for code, name in AVAILABLE_LANGUAGES %}
+      <option value="{{ code }}"{% if code == CURRENT_LANGUAGE %} selected{% endif %}>
+        {{ name }}
+      </option>
+    {% endfor %}
+  </select>
+  <noscript><button type="submit">{% translate "Change" %}</button></noscript>
+</form>

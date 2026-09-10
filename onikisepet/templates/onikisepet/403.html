@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Not permitted" %}{% endblock %}
+{% block content %}
+<h1>{% translate "Not permitted" %}</h1>
+
+<p>{% translate "Your role does not allow this action. If you believe it should, ask an administrator." %}</p>
+
+<p><a href="{% url 'report_dashboard' %}">{% translate "Back to reports" %}</a></p>
+{% endblock %}

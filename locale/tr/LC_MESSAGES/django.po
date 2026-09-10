@@ -1,0 +1,732 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-10 16:30+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#, python-format
+msgid "A %(type)s category named “%(name)s” already exists."
+msgstr "“%(name)s” adlı bir %(type)s kategorisi zaten mevcut."
+
+msgid "Amount must be greater than 0."
+msgstr "Tutar 0'dan büyük olmalıdır."
+
+msgid "Income transactions require an account."
+msgstr "Gelir işlemleri için bir hesap seçilmelidir."
+
+msgid "Income transactions require an income category."
+msgstr "Gelir işlemleri için gelir kategorisi gereklidir."
+
+msgid "Expense transactions require an account."
+msgstr "Gider işlemleri için bir hesap seçilmelidir."
+
+msgid "Expense transactions require an expense category."
+msgstr "Gider işlemleri için gider kategorisi gereklidir."
+
+msgid "Transfer transactions require a source account."
+msgstr "Transfer işlemleri için kaynak hesap gereklidir."
+
+msgid "Transfer transactions require a target account."
+msgstr "Transfer işlemleri için hedef hesap gereklidir."
+
+msgid "Transfer accounts must be different."
+msgstr "Transfer hesapları farklı olmalıdır."
+
+msgid "Cross-currency transfers are not supported in the MVP."
+msgstr "Farklı para birimleri arasında transfer bu sürümde desteklenmiyor."
+
+msgid "Why is this being changed? Recorded in the audit trail."
+msgstr "Bu neden değiştiriliyor? Denetim kaydına işlenir."
+
+msgid "A reason is required for every change."
+msgstr "Her değişiklik için bir gerekçe gereklidir."
+
+msgid "Why is this transaction being voided?"
+msgstr "Bu işlem neden iptal ediliyor?"
+
+msgid "A reason is required to void a transaction."
+msgstr "İşlemi iptal etmek için bir gerekçe gereklidir."
+
+msgid "Account"
+msgstr "Hesap"
+
+msgid "The account this statement belongs to."
+msgstr "Bu ekstrenin ait olduğu hesap."
+
+msgid "Statement file"
+msgstr "Ekstre dosyası"
+
+msgid "A CSV, Excel or PDF export from the bank."
+msgstr "Bankadan alınmış bir CSV, Excel veya PDF dökümü."
+
+msgid "Income"
+msgstr "Gelir"
+
+msgid "Expense"
+msgstr "Gider"
+
+msgid "Cash"
+msgstr "Nakit"
+
+msgid "Bank"
+msgstr "Banka"
+
+msgid "Savings"
+msgstr "Tasarruf"
+
+msgid "Online Donation"
+msgstr "Online Bağış"
+
+msgid "Main Expense"
+msgstr "Ana Gider"
+
+msgid "Foreign Currency"
+msgstr "Yabancı Para"
+
+msgid "Transfer"
+msgstr "Transfer"
+
+msgid "Voiding a transaction requires a reason."
+msgstr "Bir işlemi iptal etmek için gerekçe gereklidir."
+
+msgid "Income transactions require a target account."
+msgstr "Gelir işlemleri için hedef hesap gereklidir."
+
+msgid "Expense transactions require a source account."
+msgstr "Gider işlemleri için kaynak hesap gereklidir."
+
+msgid "Receipt must belong to an expense transaction."
+msgstr "Fişler yalnızca gider işlemleri için eklenebilir."
+
+msgid "Receipt must belong to a cash expense transaction."
+msgstr "Fişler yalnızca nakit gider işlemleri için eklenebilir."
+
+msgid "Audit log entries cannot be deleted."
+msgstr "Denetim kaydı girdileri silinemez."
+
+msgid "Created"
+msgstr "Oluşturuldu"
+
+msgid "Changed"
+msgstr "Değiştirildi"
+
+msgid "Voided"
+msgstr "İptal Edildi"
+
+msgid "Audit log entries cannot be modified."
+msgstr "Denetim kaydı girdileri değiştirilemez."
+
+msgid "Draft"
+msgstr "Taslak"
+
+msgid "Confirmed"
+msgstr "Onaylandı"
+
+msgid "Cancelled"
+msgstr "İptal edildi"
+
+#, python-format
+msgid "“%(value)s” is not a valid amount."
+msgstr "“%(value)s” geçerli bir tutar değil."
+
+#, fuzzy
+#| msgid "A reason is required for every change."
+msgid "An amount is required."
+msgstr "Tutar gereklidir."
+
+msgid "On İki Sepet"
+msgstr "On İki Sepet"
+
+msgid "Reports"
+msgstr "Raporlar"
+
+msgid "Transactions"
+msgstr "İşlemler"
+
+msgid "Accounts"
+msgstr "Hesaplar"
+
+msgid "Categories"
+msgstr "Kategoriler"
+
+msgid "Exchange Rates"
+msgstr "Döviz Kurları"
+
+msgid "Imports"
+msgstr "İçe aktarmalar"
+
+msgid "Guide"
+msgstr "Rehber"
+
+#, python-format
+msgid "Signed in as %(username)s."
+msgstr "%(username)s olarak giriş yapıldı."
+
+msgid "Sign out"
+msgstr "Çıkış"
+
+msgid "Not permitted"
+msgstr "İzin verilmedi"
+
+msgid "Your role does not allow this action. If you believe it should, ask an administrator."
+msgstr "Rolünüz bu işleme izin vermiyor. İzin verilmesi gerektiğini düşünüyorsanız bir yöneticiye başvurun."
+
+#, fuzzy
+#| msgid "Back to transactions"
+msgid "Back to reports"
+msgstr "Raporlara dön"
+
+#, python-format
+msgid "rate of %(when)s"
+msgstr "%(when)s tarihli kur"
+
+msgid "no exchange rate on file, excluded from the total"
+msgstr "kayıtlı döviz kuru yok, toplama dahil edilmedi"
+
+msgid "Warning:"
+msgstr "Uyarı:"
+
+#, python-format
+msgid "this total is incomplete. There is no exchange rate for %(currencies)s."
+msgstr "bu toplam eksik. %(currencies)s için döviz kuru yok."
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Change"
+msgstr "Değiştir"
+
+msgid "Create Account"
+msgstr "Hesap Oluştur"
+
+msgid "Save"
+msgstr "Kaydet"
+
+msgid "No accounts found."
+msgstr "Hesap bulunamadı."
+
+msgid "Add account"
+msgstr "Hesap ekle"
+
+msgid "Create Cash Expense"
+msgstr "Nakit Gider Oluştur"
+
+msgid "Create Category"
+msgstr "Kategori Oluştur"
+
+msgid "No categories found."
+msgstr "Kategori bulunamadı."
+
+msgid "Add category"
+msgstr "Kategori ekle"
+
+msgid "Add Exchange Rate"
+msgstr "Döviz Kuru Ekle"
+
+#, python-format
+msgid "Enter how many %(base_currency)s one unit of the foreign currency is worth."
+msgstr "Bir birim yabancı paranın kaç %(base_currency)s değerinde olduğunu girin."
+
+#, python-format
+msgid "Rates convert one unit of a foreign currency into %(base_currency)s."
+msgstr "Kurlar, bir birim yabancı parayı %(base_currency)s cinsine çevirir."
+
+msgid "No exchange rates recorded yet."
+msgstr "Henüz döviz kuru kaydedilmemiş."
+
+msgid "Add exchange rate"
+msgstr "Döviz kuru ekle"
+
+msgid "How the books work"
+msgstr "Kayıtlar nasıl işler"
+
+#, fuzzy
+#| msgid "Account Balances"
+msgid "Accounts and categories"
+msgstr "Hesaplar ve kategoriler"
+
+msgid "An account is somewhere money actually sits: the cash box, a bank account, a savings fund. A category is what the money was for: rent, offerings, aid."
+msgstr "Hesap, paranın fiilen bulunduğu yerdir: kasa, bir banka hesabı, bir tasarruf fonu. Kategori ise paranın ne için olduğudur: kira, bağış, yardım."
+
+msgid "Every account has one currency and keeps its own balance. Categories are separate for income and expense, so the same name can exist for both."
+msgstr "Her hesabın tek bir para birimi vardır ve kendi bakiyesini tutar. Kategoriler gelir ve gider için ayrıdır; bu nedenle aynı ad her ikisi için de bulunabilir."
+
+msgid "Currencies"
+msgstr "Para birimleri"
+
+msgid "Amounts in different currencies are never added together. Each currency gets its own income, expense and net figure."
+msgstr "Farklı para birimlerindeki tutarlar asla toplanmaz. Her para birimi kendi gelir, gider ve net tutarını alır."
+
+#, python-format
+msgid "The dashboard also shows a grand total converted into %(currency)s, using the exchange rate on file for the reporting date. It always states which rate it used."
+msgstr "Panel ayrıca, rapor tarihi için kayıtlı döviz kurunu kullanarak %(currency)s cinsine çevrilmiş bir genel toplam gösterir. Hangi kuru kullandığını her zaman belirtir."
+
+msgid "If there is no rate on file for a currency, that currency is left out of the grand total and the total is marked incomplete. It is never quietly dropped."
+msgstr "Bir para birimi için kayıtlı kur yoksa, o para birimi genel toplamın dışında bırakılır ve toplam eksik olarak işaretlenir. Asla sessizce çıkarılmaz."
+
+msgid "Balances and periods"
+msgstr "Bakiyeler ve dönemler"
+
+msgid "Income and expense figures can be narrowed to a period. Balances cannot: a balance is the cumulative position including the opening balance, so it always covers everything up to today."
+msgstr "Gelir ve gider tutarları bir döneme daraltılabilir. Bakiyeler daraltılamaz: bakiye, açılış bakiyesi dahil birikimli durumdur ve bu nedenle her zaman bugüne kadarki her şeyi kapsar."
+
+msgid "Fixing a mistake"
+msgstr "Bir hatayı düzeltmek"
+
+msgid "Nothing is ever deleted. A transaction can be corrected, and every change is recorded with who made it, when, and why."
+msgstr "Hiçbir şey silinmez. Bir işlem düzeltilebilir ve her değişiklik; kimin yaptığı, ne zaman ve neden yapıldığı ile birlikte kaydedilir."
+
+msgid "If an entry should not have existed at all, void it. Voiding keeps the record and its history, but removes it from every report and balance."
+msgstr "Bir kayıt hiç var olmamalıydıysa onu iptal edin. İptal etmek, kaydı ve geçmişini saklar; ancak onu her rapordan ve bakiyeden çıkarır."
+
+msgid "Receipts"
+msgstr "Fişler"
+
+msgid "Cash expenses can carry a receipt image or PDF. Receipts hold financial information, so they are stored privately and only accessible to signed-in users with a role."
+msgstr "Nakit giderlere fiş görüntüsü veya PDF eklenebilir. Fişler finansal bilgi içerdiğinden özel olarak saklanır ve yalnızca rolü olan, giriş yapmış kullanıcılar erişebilir."
+
+msgid "Which record should I use?"
+msgstr "Hangi kaydı kullanmalıyım?"
+
+msgid "Statement imports"
+msgstr "Ekstre içe aktarmaları"
+
+#, python-format
+msgid "%(who)s on %(when)s"
+msgstr "%(who)s, %(when)s"
+
+msgid "No statements have been imported yet."
+msgstr "Henüz ekstre içe aktarılmadı."
+
+msgid "Import a bank statement"
+msgstr "Banka ekstresi içe aktar"
+
+msgid "Review statement"
+msgstr "Ekstreyi incele"
+
+msgid "Choose a category for each line you want to record, and skip the rest. Nothing is added to the books until you confirm."
+msgstr "Kaydetmek istediğiniz her satır için bir kategori seçin, diğerlerini atlayın. Siz onaylamadıkça kayıtlara hiçbir şey eklenmez."
+
+#, python-format
+msgid "Lines still needing attention: %(counter)s"
+msgstr "Hâlâ ilgilenilmesi gereken satır: %(counter)s"
+
+msgid "This statement has been processed. It is shown here for reference."
+msgstr "Bu ekstre işlendi. Burada bilgi amacıyla gösterilmektedir."
+
+msgid "Date"
+msgstr "Tarih"
+
+msgid "Description"
+msgstr "Açıklama"
+
+msgid "Type"
+msgstr "Tür"
+
+msgid "Amount"
+msgstr "Tutar"
+
+msgid "Category"
+msgstr "Kategori"
+
+msgid "Skip"
+msgstr "Atla"
+
+msgid "Notes"
+msgstr "Notlar"
+
+msgid "Skipped"
+msgstr "Atlandı"
+
+msgid "Looks like a transaction already recorded."
+msgstr "Zaten kaydedilmiş bir işleme benziyor."
+
+msgid "Imported"
+msgstr "İçe aktarıldı"
+
+msgid "Save choices"
+msgstr "Seçimleri kaydet"
+
+msgid "Confirm and record"
+msgstr "Onayla ve kaydet"
+
+msgid "Discard this import"
+msgstr "Bu içe aktarmayı iptal et"
+
+msgid "Back to imports"
+msgstr "İçe aktarmalara dön"
+
+msgid "Upload the statement and you will see the lines it contains before anything is recorded. Nothing is added to the books until you confirm."
+msgstr "Ekstreyi yükleyin; hiçbir şey kaydedilmeden önce içerdiği satırları göreceksiniz. Siz onaylamadıkça kayıtlara hiçbir şey eklenmez."
+
+msgid "The file could not be read:"
+msgstr "Dosya okunamadı:"
+
+msgid "Upload and review"
+msgstr "Yükle ve incele"
+
+msgid "Accepted formats: CSV, Excel (.xlsx) and PDF. CSV or Excel is more reliable than PDF."
+msgstr "Kabul edilen biçimler: CSV, Excel (.xlsx) ve PDF. CSV veya Excel, PDF'ten daha güvenilirdir."
+
+msgid "Download an example CSV"
+msgstr "Örnek CSV indir"
+
+msgid "Previous imports"
+msgstr "Önceki içe aktarmalar"
+
+msgid "Waiting for access"
+msgstr "Erişim bekleniyor"
+
+#, python-format
+msgid "You are signed in as %(username)s, but no role has been assigned to your account yet."
+msgstr "%(username)s olarak giriş yaptınız, ancak hesabınıza henüz bir rol atanmadı."
+
+msgid "The church books include donor records, so access is granted deliberately rather than automatically. Please ask an administrator to give your account a role."
+msgstr "Kilise kayıtları bağışçı bilgilerini içerir; bu nedenle erişim otomatik değil, bilinçli olarak verilir. Lütfen bir yöneticiden hesabınıza rol atamasını isteyin."
+
+msgid "Every entry is one of three kinds. Choosing the right one keeps the reports correct, because transfers are counted differently from income and expenses."
+msgstr "Her kayıt üç türden biridir. Doğru olanı seçmek raporların doğru kalmasını sağlar; çünkü transferler gelir ve giderlerden farklı sayılır."
+
+msgid "Money coming in to the church: offerings, online donations, designated gifts."
+msgstr "Kiliseye giren para: bağışlar, online bağışlar, belirli amaçlı hediyeler."
+
+msgid "Needs:"
+msgstr "Gerekenler:"
+
+#, fuzzy
+#| msgid "Income transactions require an income category."
+msgid "the account it arrived in, and an income category."
+msgstr "paranın girdiği hesap ve bir gelir kategorisi."
+
+msgid "Money going out: rent, bills, staff, aid, supplies."
+msgstr "Çıkan para: kira, faturalar, personel, yardım, malzeme."
+
+#, fuzzy
+#| msgid "Expense transactions require an expense category."
+msgid "the account it was paid from, and an expense category."
+msgstr "ödemenin yapıldığı hesap ve bir gider kategorisi."
+
+msgid "If it was paid in cash, use the cash expense form instead so you can attach the receipt."
+msgstr "Nakit ödendiyse, fişi ekleyebilmek için bunun yerine nakit gider formunu kullanın."
+
+msgid "Moving the church's own money between its own accounts, for example from the donation account to the expense account."
+msgstr "Kilisenin kendi parasını kendi hesapları arasında taşımak; örneğin bağış hesabından gider hesabına."
+
+msgid "a source account and a target account, in the same currency."
+msgstr "aynı para biriminde bir kaynak hesap ve bir hedef hesap."
+
+msgid "Important:"
+msgstr "Önemli:"
+
+msgid "a transfer is never income and never an expense. The church is no richer or poorer for moving its own money, so transfers are excluded from income, expense and net figures."
+msgstr "bir transfer asla gelir ve asla gider değildir. Kilise kendi parasını taşıyarak ne zenginleşir ne yoksullaşır; bu nedenle transferler gelir, gider ve net tutarların dışında tutulur."
+
+msgid "Cash expense with a receipt"
+msgstr "Fişli nakit gider"
+
+msgid "A cash purchase where you have the till receipt. The receipt is uploaded with the entry, so the evidence stays attached to the record."
+msgstr "Kasa fişine sahip olduğunuz bir nakit alım. Fiş kayıtla birlikte yüklenir; böylece kanıt kayda ekli kalır."
+
+msgid "Financial Summary"
+msgstr "Finans Özeti"
+
+#, python-format
+msgid "As at %(when)s. Base currency: %(currency)s."
+msgstr "%(when)s tarihi itibarıyla. Ana para birimi: %(currency)s."
+
+msgid "Period"
+msgstr "Dönem"
+
+msgid "Apply"
+msgstr "Uygula"
+
+#, python-format
+msgid "Showing: %(range)s"
+msgstr "Gösterilen: %(range)s"
+
+msgid "Total Income"
+msgstr "Toplam Gelir"
+
+msgid "Total Expenses"
+msgstr "Toplam Gider"
+
+msgid "Net Financial Status"
+msgstr "Net Finansal Durum"
+
+msgid "Grand Total"
+msgstr "Genel Toplam"
+
+msgid "incomplete"
+msgstr "eksik"
+
+msgid "Account Balances"
+msgstr "Hesap Bakiyeleri"
+
+msgid "Balances are the cumulative position to date and are not affected by the period above."
+msgstr "Bakiyeler bugüne kadarki birikimli durumu gösterir ve yukarıdaki dönemden etkilenmez."
+
+msgid "Total Holdings"
+msgstr "Toplam Varlık"
+
+#, python-format
+msgid "Transaction %(id)s"
+msgstr "İşlem %(id)s"
+
+msgid "VOIDED"
+msgstr "İPTAL EDİLDİ"
+
+#, python-format
+msgid "on %(when)s by %(who)s"
+msgstr "%(when)s tarihinde %(who)s tarafından"
+
+msgid "This transaction is excluded from all reports and balances."
+msgstr "Bu işlem tüm raporlardan ve bakiyelerden çıkarılmıştır."
+
+msgid "Payee"
+msgstr "Alıcı"
+
+msgid "From account"
+msgstr "Kaynak hesap"
+
+msgid "To account"
+msgstr "Hedef hesap"
+
+msgid "Entered by"
+msgstr "Kaydeden"
+
+msgid "Correct this transaction"
+msgstr "Bu işlemi düzelt"
+
+msgid "Void this transaction"
+msgstr "Bu işlemi iptal et"
+
+#, python-format
+msgid "uploaded by %(who)s on %(when)s"
+msgstr "%(who)s tarafından %(when)s tarihinde yüklendi"
+
+msgid "No receipts attached."
+msgstr "Ekli fiş yok."
+
+msgid "Audit Trail"
+msgstr "Denetim Kaydı"
+
+#, python-format
+msgid "changed %(field)s from %(old)s to %(new)s"
+msgstr "%(field)s alanını %(old)s değerinden %(new)s değerine değiştirdi"
+
+msgid "No recorded changes."
+msgstr "Kayıtlı değişiklik yok."
+
+msgid "Back to transactions"
+msgstr "İşlemlere dön"
+
+msgid "Edit Transaction"
+msgstr "İşlemi Düzenle"
+
+msgid "Every change is recorded in the audit trail with the reason you give below."
+msgstr "Her değişiklik, aşağıda belirttiğiniz gerekçeyle denetim kaydına işlenir."
+
+msgid "Save change"
+msgstr "Değişikliği kaydet"
+
+msgid "Cancel"
+msgstr "İptal"
+
+msgid "Create Transaction"
+msgstr "İşlem Oluştur"
+
+msgid "No description"
+msgstr "Açıklama yok"
+
+msgid "No transactions found."
+msgstr "İşlem bulunamadı."
+
+msgid "Previous"
+msgstr "Önceki"
+
+#, python-format
+msgid "Page %(current)s of %(total)s"
+msgstr "Sayfa %(current)s / %(total)s"
+
+msgid "Next"
+msgstr "Sonraki"
+
+msgid "Void Transaction"
+msgstr "İşlemi İptal Et"
+
+msgid "Voiding removes this transaction from all reports and balances. The record itself is kept, along with who voided it and why. It cannot be deleted."
+msgstr "İptal etmek, bu işlemi tüm raporlardan ve bakiyelerden çıkarır. Kaydın kendisi, kimin neden iptal ettiğiyle birlikte saklanır. Silinemez."
+
+msgid "Sign in"
+msgstr "Giriş yap"
+
+msgid "Your username and password did not match. Please try again."
+msgstr "Kullanıcı adı ve şifre uyuşmuyor. Lütfen tekrar deneyin."
+
+msgid "Forgotten your password?"
+msgstr "Şifrenizi mi unuttunuz?"
+
+msgid "Password changed"
+msgstr "Şifre değiştirildi"
+
+msgid "Your password has been set. You can sign in with it now."
+msgstr "Şifreniz belirlendi. Artık bu şifreyle giriş yapabilirsiniz."
+
+msgid "New password"
+msgstr "Yeni şifre"
+
+msgid "Set new password"
+msgstr "Yeni şifreyi belirle"
+
+msgid "This reset link is no longer valid. It may already have been used. Please request a new one."
+msgstr "Bu sıfırlama bağlantısı artık geçerli değil. Daha önce kullanılmış olabilir. Lütfen yeni bir tane isteyin."
+
+msgid "Reset password"
+msgstr "Şifre sıfırlama"
+
+msgid "Reset link sent"
+msgstr "Sıfırlama bağlantısı gönderildi"
+
+msgid "If an account exists for that address, a reset link is on its way. Check your inbox, and your spam folder."
+msgstr "Bu adrese ait bir hesap varsa, sıfırlama bağlantısı yolda. Gelen kutunuzu ve gereksiz klasörünüzü kontrol edin."
+
+#, fuzzy
+#| msgid "Back to transactions"
+msgid "Back to sign in"
+msgstr "Girişe dön"
+
+#, python-format
+msgid "Hello,\n\nSomeone asked to reset the password for your On İki Sepet account (%(user)s).\n\nIf it was you, follow this link to set a new password:\n"
+msgstr "Merhaba,\n\nOn İki Sepet hesabınız (%(user)s) için şifre sıfırlama talebinde bulunuldu.\n\nBu talep sizden geldiyse, yeni şifre belirlemek için bu bağlantıyı izleyin:\n"
+
+msgid "If it was not you, you can ignore this message and your password will stay as it is."
+msgstr "Bu talep sizden gelmediyse bu iletiyi yok sayabilirsiniz; şifreniz olduğu gibi kalır."
+
+msgid "Enter the email address on your account and we will send you a link to set a new password."
+msgstr "Hesabınızdaki e-posta adresini girin; yeni şifre belirlemeniz için size bir bağlantı göndereceğiz."
+
+msgid "Send reset link"
+msgstr "Sıfırlama bağlantısı gönder"
+
+#, fuzzy
+#| msgid "On İki Sepet"
+msgid "On İki Sepet - password reset"
+msgstr "On İki Sepet - şifre sıfırlama"
+
+#, python-format
+msgid "No date column found. Expected one of: %(aliases)s."
+msgstr "Tarih sütunu bulunamadı. Şunlardan biri beklenir: %(aliases)s."
+
+msgid "No amount column found. Expected an amount column, or separate debit and credit columns."
+msgstr "Tutar sütunu bulunamadı. Bir tutar sütunu ya da ayrı borç ve alacak sütunları beklenir."
+
+msgid "The date is missing."
+msgstr "Tarih eksik."
+
+#, python-format
+msgid "“%(value)s” is not a date we recognise."
+msgstr "“%(value)s” tanıdığımız bir tarih biçimi değil."
+
+msgid "The amount is missing."
+msgstr "Tutar eksik."
+
+msgid "This line has both a debit and a credit; only one is expected."
+msgstr "Bu satırda hem borç hem alacak var; yalnızca biri beklenir."
+
+msgid "This line has more columns than the header. The file's delimiter or quoting looks wrong, so the amount cannot be read safely."
+msgstr "Bu satırda başlıktan fazla sütun var. Dosyanın ayırıcısı veya tırnak kullanımı hatalı görünüyor; bu nedenle tutar güvenle okunamaz."
+
+msgid "The amount is zero, so there is nothing to record."
+msgstr "Tutar sıfır, bu nedenle kaydedilecek bir şey yok."
+
+msgid "The file is empty."
+msgstr "Dosya boş."
+
+msgid "The file has a header but no rows."
+msgstr "Dosyada başlık var ancak satır yok."
+
+msgid "The file's text encoding is unreadable."
+msgstr "Dosyanın metin kodlaması okunamıyor."
+
+msgid "Excel support requires the openpyxl package."
+msgstr "Excel desteği için openpyxl paketi gereklidir."
+
+msgid "PDF support requires the pdfplumber package."
+msgstr "PDF desteği için pdfplumber paketi gereklidir."
+
+msgid "No table could be read from this PDF. Bank PDFs vary; exporting the statement as CSV or Excel is more reliable."
+msgstr "Bu PDF'ten tablo okunamadı. Banka PDF'leri değişkendir; ekstreyi CSV veya Excel olarak indirmek daha güvenilirdir."
+
+msgid "Statements must be a CSV, Excel or PDF file."
+msgstr "Ekstreler CSV, Excel veya PDF dosyası olmalıdır."
+
+#, python-format
+msgid "This line is in %(row)s but the account is %(account)s."
+msgstr "Bu satır %(row)s cinsinden, ancak hesap %(account)s cinsinden."
+
+msgid "Choose a category, or skip this line."
+msgstr "Bir kategori seçin veya bu satırı atlayın."
+
+#, python-format
+msgid "This statement has already been %(status)s."
+msgstr "Bu ekstre zaten %(status)s durumunda."
+
+#, python-format
+msgid "Lines still needing attention: %(count)s"
+msgstr "Hâlâ ilgilenilmesi gereken satır: %(count)s"
+
+#, python-format
+msgid "Imported from %(file)s"
+msgstr "%(file)s dosyasından içe aktarıldı"
+
+msgid "Only a draft statement can be cancelled."
+msgstr "Yalnızca taslak durumundaki bir ekstre iptal edilebilir."
+
+msgid "All time"
+msgstr "Tüm zamanlar"
+
+msgid "This month"
+msgstr "Bu ay"
+
+msgid "Last month"
+msgstr "Geçen ay"
+
+msgid "This year"
+msgstr "Bu yıl"
+
+#, python-format
+msgid "Receipts must be a %(allowed)s file."
+msgstr "Fiş dosyası %(allowed)s biçiminde olmalıdır."
+
+#, python-format
+msgid "Receipts must be %(limit)s MB or smaller."
+msgstr "Fiş dosyası en fazla %(limit)s MB olabilir."
+
+#, python-format
+msgid "This file is not a valid %(extension)s file. Its contents do not match its extension."
+msgstr "Bu dosya geçerli bir %(extension)s dosyası değil. İçeriği uzantısıyla uyuşmuyor."
+
+msgid "A voided transaction cannot be edited."
+msgstr "İptal edilmiş bir işlem düzenlenemez."
+
+msgid "This transaction is already voided."
+msgstr "Bu işlem zaten iptal edilmiş."
+
+#, fuzzy, python-format
+#| msgid "Transaction %(id)s"
+msgid "Transactions imported: %(count)s"
+msgstr "İçe aktarılan işlem: %(count)s"

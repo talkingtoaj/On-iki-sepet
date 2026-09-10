@@ -1,10 +1,11 @@
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionBusinessRuleTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.user = self.create_user("transaction_rules_user")

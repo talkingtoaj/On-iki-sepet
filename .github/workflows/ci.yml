@@ -52,6 +52,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      - name: Install gettext
+        # compilemessages shells out to msgfmt, which is not guaranteed to be
+        # on the runner image.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext
+
+      - name: Compile translations
+        # The .mo files are not committed, and the localisation tests assert
+        # real Turkish output, so they must be built before the suite runs.
+        run: uv run python manage.py compilemessages -l tr
+
       - name: Check for model changes with no migration
         # Catches a field or constraint edited without makemigrations, which
         # would otherwise only surface as a runtime error after deploy.
@@ -105,6 +115,16 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --locked
+
+      - name: Install gettext
+        # compilemessages shells out to msgfmt, which is not guaranteed to be
+        # on the runner image.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext
+
+      - name: Compile translations
+        # The .mo files are not committed, and the localisation tests assert
+        # real Turkish output, so they must be built before the suite runs.
+        run: uv run python manage.py compilemessages -l tr
 
       - name: Confirm the suite will really run on PostgreSQL
         # Without this the job could pass while testing nothing it claims to.

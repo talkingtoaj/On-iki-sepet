@@ -1,8 +1,11 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.shortcuts import resolve_url
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from onikisepet.usecases.roles import seed_roles
@@ -10,6 +13,7 @@ from onikisepet.usecases.roles import seed_roles
 from .helpers import CategoryTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class CategoryViewTests(CategoryTestMixin, TestCase):
     password = "StrongTestPass123!"
 

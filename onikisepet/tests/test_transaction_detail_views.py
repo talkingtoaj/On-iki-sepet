@@ -1,3 +1,6 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 import tempfile
 from decimal import Decimal
 
@@ -9,7 +12,7 @@ from django.urls import reverse
 from .helpers import ReceiptFileTestMixin, TransactionTestMixin
 
 
-@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp(), LANGUAGE_CODE="en")
 class TransactionDetailViewTests(
     ReceiptFileTestMixin, TransactionTestMixin, TestCase
 ):

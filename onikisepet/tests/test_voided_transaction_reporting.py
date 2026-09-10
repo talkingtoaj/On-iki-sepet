@@ -1,6 +1,9 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from onikisepet.usecases.roles import TREASURER
@@ -8,6 +11,7 @@ from onikisepet.usecases.roles import TREASURER
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class VoidedTransactionsAreExcludedTests(TransactionTestMixin, TestCase):
     """A voided transaction stays in the database for the audit trail, but it
     must not reach any total or balance. The exclusion lives inside the

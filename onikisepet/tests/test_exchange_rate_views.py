@@ -1,13 +1,17 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 from decimal import Decimal
 
 from django.conf import settings
 from django.shortcuts import resolve_url
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .helpers import ExchangeRateTestMixin, TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class ExchangeRateViewTests(ExchangeRateTestMixin, TransactionTestMixin, TestCase):
     def setUp(self):
         self.list_url = reverse("exchange_rate_list")

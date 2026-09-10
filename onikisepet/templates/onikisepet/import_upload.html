@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Import a bank statement" %}{% endblock %}
+{% block content %}
+<h1>{% translate "Import a bank statement" %}</h1>
+
+<p>{% translate "Upload the statement and you will see the lines it contains before anything is recorded. Nothing is added to the books until you confirm." %}</p>
+
+{% if format_error %}
+  <p><strong>{% translate "The file could not be read:" %}</strong> {{ format_error }}</p>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">{% translate "Upload and review" %}</button>
+</form>
+
+<p>{% translate "Accepted formats: CSV, Excel (.xlsx) and PDF. CSV or Excel is more reliable than PDF." %}</p>
+<p><a href="{% url 'import_sample_csv' %}">{% translate "Download an example CSV" %}</a></p>
+<p><a href="{% url 'import_list' %}">{% translate "Previous imports" %}</a></p>
+{% endblock %}

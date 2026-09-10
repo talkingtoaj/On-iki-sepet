@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Create Cash Expense{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Create Cash Expense" %}{% endblock %}
 {% block content %}
-<h1>Create Cash Expense</h1>
+<h1>{% translate "Create Cash Expense" %}</h1>
 
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Save</button>
+    <button type="submit">{% translate "Save" %}</button>
 </form>
 {% endblock %}

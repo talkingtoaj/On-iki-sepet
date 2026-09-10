@@ -19,6 +19,10 @@ media/
 # Static build output
 staticfiles/
 
+# Compiled message catalogues. Built from the .po files, which are
+# the source of truth; a committed .mo goes stale silently.
+*.mo
+
 # Environment variables
 .env
 .env.local

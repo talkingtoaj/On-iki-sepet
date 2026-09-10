@@ -35,13 +35,15 @@ CSRF_TRUSTED_ORIGINS = env.get_csrf_trusted_origins(os.environ)
 # Application definition
 
 INSTALLED_APPS = [
+    # First, so our templates win over the ones django.contrib.admin ships
+    # under registration/ (notably the password-reset email and subject).
+    'onikisepet',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'onikisepet',
 ]
 
 MIDDLEWARE = [
@@ -50,6 +52,9 @@ MIDDLEWARE = [
     # separate web server is needed on Cloud Run.
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # Must sit after SessionMiddleware (it reads the chosen language from the
+    # session) and before CommonMiddleware.
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -115,11 +120,20 @@ AUTH_PASSWORD_VALIDATORS = [
 # for the dashboard grand total, using the ExchangeRate table.
 BASE_CURRENCY = 'TRY'
 
-LANGUAGE_CODE = 'en-us'
+# The app is bilingual. Turkish is the default because the congregation is
+# Turkish; the language selector lets any user switch, and the choice is kept
+# in their session.
+LANGUAGE_CODE = os.environ.get('DJANGO_LANGUAGE_CODE', 'tr')
 
-# Reporting dates follow this zone, not the server clock. A Turkish
-# deployment should set DJANGO_TIME_ZONE=Europe/Istanbul.
-TIME_ZONE = os.environ.get('DJANGO_TIME_ZONE', 'UTC')
+LANGUAGES = [
+    ('tr', 'Türkçe'),
+    ('en', 'English'),
+]
+
+LOCALE_PATHS = [BASE_DIR / 'locale']
+
+# Reporting dates follow this zone, not the server clock.
+TIME_ZONE = os.environ.get('DJANGO_TIME_ZONE', 'Europe/Istanbul')
 
 USE_I18N = True
 
@@ -175,6 +189,26 @@ if GS_BUCKET_NAME:
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Email, needed for password reset. Development prints to the console;
+# production must point at a real SMTP host or reset links go nowhere.
+EMAIL_BACKEND = os.environ.get(
+    'DJANGO_EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend'
+    if IS_PRODUCTION
+    else 'django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = os.environ.get('DJANGO_EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('DJANGO_EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('DJANGO_EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('DJANGO_EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = env.as_bool(os.environ.get('DJANGO_EMAIL_USE_TLS'), default=True)
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DJANGO_DEFAULT_FROM_EMAIL', 'onikisepet@example.org'
+)
+
+env.check_email_configuration(os.environ, EMAIL_BACKEND, EMAIL_HOST)
 
 
 # HTTPS, HSTS and cookie hardening. Enabled together in production.

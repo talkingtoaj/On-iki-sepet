@@ -1,10 +1,11 @@
 from typing import Any
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionFormTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.cash_account = self.create_account(

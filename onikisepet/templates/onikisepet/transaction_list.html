@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Transactions{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Transactions" %}{% endblock %}
 {% block content %}
-<h1>Transactions</h1>
+<h1>{% translate "Transactions" %}</h1>
 
 {% if transactions %}
     <ul>
@@ -10,23 +11,23 @@
                 <a href="{% url 'transaction_detail' transaction.pk %}">{{ transaction.date }}</a> -
                 {{ transaction.get_transaction_type_display }} -
                 {{ transaction.amount }} {{ transaction.currency }} -
-                {{ transaction.description|default:"No description" }}
-                {% if transaction.is_void %}<strong>VOIDED</strong>{% endif %}
+                {{ transaction.description|default:_("No description") }}
+                {% if transaction.is_void %}<strong>{% translate "VOIDED" %}</strong>{% endif %}
             </li>
         {% endfor %}
     </ul>
 {% else %}
-    <p>No transactions found.</p>
+    <p>{% translate "No transactions found." %}</p>
 {% endif %}
 
 {% if page_obj.has_other_pages %}
   <nav>
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+      <a href="?page={{ page_obj.previous_page_number }}">{% translate "Previous" %}</a>
     {% endif %}
-    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <span>{% blocktranslate with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktranslate %}</span>
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}">Next</a>
+      <a href="?page={{ page_obj.next_page_number }}">{% translate "Next" %}</a>
     {% endif %}
   </nav>
 {% endif %}

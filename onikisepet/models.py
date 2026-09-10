@@ -5,14 +5,15 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from .validators import validate_receipt_file
 
 
 class Category(models.Model):
     class CategoryType(models.TextChoices):
-        INCOME = "income", "Income"
-        EXPENSE = "expense", "Expense"
+        INCOME = "income", _("Income")
+        EXPENSE = "expense", _("Expense")
 
     name = models.CharField(max_length=100)
     category_type = models.CharField(
@@ -40,16 +41,16 @@ class Category(models.Model):
 
 class Account(models.Model):
     class AccountType(models.TextChoices):
-        CASH = "cash", "Cash"
-        BANK = "bank", "Bank"
-        SAVINGS = "savings", "Savings"
+        CASH = "cash", _("Cash")
+        BANK = "bank", _("Bank")
+        SAVINGS = "savings", _("Savings")
 
     class AccountPurpose(models.TextChoices):
-        CASH = "cash", "Cash"
-        ONLINE_DONATION = "online_donation", "Online Donation"
-        MAIN_EXPENSE = "main_expense", "Main Expense"
-        FOREIGN_CURRENCY = "foreign_currency", "Foreign Currency"
-        SAVINGS = "savings", "Savings"
+        CASH = "cash", _("Cash")
+        ONLINE_DONATION = "online_donation", _("Online Donation")
+        MAIN_EXPENSE = "main_expense", _("Main Expense")
+        FOREIGN_CURRENCY = "foreign_currency", _("Foreign Currency")
+        SAVINGS = "savings", _("Savings")
 
     class Currency(models.TextChoices):
         TRY = "TRY", "TRY"
@@ -96,9 +97,9 @@ class TransactionQuerySet(models.QuerySet):
 
 class Transaction(models.Model):
     class TransactionType(models.TextChoices):
-        INCOME = "income", "Income"
-        EXPENSE = "expense", "Expense"
-        TRANSFER = "transfer", "Transfer"
+        INCOME = "income", _("Income")
+        EXPENSE = "expense", _("Expense")
+        TRANSFER = "transfer", _("Transfer")
 
     date = models.DateField()
     amount = models.DecimalField(
@@ -185,7 +186,7 @@ class Transaction(models.Model):
         errors = {}
 
         if self.amount is not None and self.amount <= Decimal("0"):
-            errors["amount"] = "Amount must be greater than 0."
+            errors["amount"] = _("Amount must be greater than 0.")
 
         if self.transaction_type == self.TransactionType.INCOME:
             self._validate_income(errors)
@@ -195,7 +196,7 @@ class Transaction(models.Model):
             self._validate_transfer(errors)
 
         if self.is_void and not (self.void_reason or "").strip():
-            errors["void_reason"] = "Voiding a transaction requires a reason."
+            errors["void_reason"] = _("Voiding a transaction requires a reason.")
 
         if errors:
             raise ValidationError(errors)
@@ -225,44 +226,44 @@ class Transaction(models.Model):
 
     def _validate_income(self, errors):
         if self.target_account is None:
-            errors["target_account"] = "Income transactions require a target account."
+            errors["target_account"] = _("Income transactions require a target account.")
         if (
             self.category is None
             or self.category.category_type != Category.CategoryType.INCOME
         ):
             errors["category"] = (
-                "Income transactions require an income category."
+                _("Income transactions require an income category.")
             )
 
     def _validate_expense(self, errors):
         if self.source_account is None:
-            errors["source_account"] = "Expense transactions require a source account."
+            errors["source_account"] = _("Expense transactions require a source account.")
         if (
             self.category is None
             or self.category.category_type != Category.CategoryType.EXPENSE
         ):
             errors["category"] = (
-                "Expense transactions require an expense category."
+                _("Expense transactions require an expense category.")
             )
 
     def _validate_transfer(self, errors):
         if self.source_account is None:
-            errors["source_account"] = "Transfer transactions require a source account."
+            errors["source_account"] = _("Transfer transactions require a source account.")
         if self.target_account is None:
-            errors["target_account"] = "Transfer transactions require a target account."
+            errors["target_account"] = _("Transfer transactions require a target account.")
         if (
             self.source_account is not None
             and self.target_account is not None
             and self.source_account == self.target_account
         ):
-            errors["target_account"] = "Transfer accounts must be different."
+            errors["target_account"] = _("Transfer accounts must be different.")
         if (
             self.source_account is not None
             and self.target_account is not None
             and self.source_account.currency != self.target_account.currency
         ):
             errors["target_account"] = (
-                "Cross-currency transfers are not supported in the MVP."
+                _("Cross-currency transfers are not supported in the MVP.")
             )
 
 
@@ -301,7 +302,7 @@ class Receipt(models.Model):
 
         if transaction.transaction_type != Transaction.TransactionType.EXPENSE:
             raise ValidationError(
-                {"transaction": "Receipt must belong to an expense transaction."}
+                {"transaction": _("Receipt must belong to an expense transaction.")}
             )
 
         if (
@@ -309,7 +310,7 @@ class Receipt(models.Model):
             or transaction.source_account.account_type != Account.AccountType.CASH
         ):
             raise ValidationError(
-                {"transaction": "Receipt must belong to a cash expense transaction."}
+                {"transaction": _("Receipt must belong to a cash expense transaction.")}
             )
 
     def save(self, *args, **kwargs):
@@ -396,7 +397,7 @@ class ExchangeRate(models.Model):
 class TransactionAuditLogQuerySet(models.QuerySet):
     def delete(self, *args, **kwargs):
         """Bulk delete bypasses Model.delete(), so it is blocked here too."""
-        raise ValidationError("Audit log entries cannot be deleted.")
+        raise ValidationError(_("Audit log entries cannot be deleted."))
 
 
 class TransactionAuditLog(models.Model):
@@ -408,9 +409,9 @@ class TransactionAuditLog(models.Model):
     """
 
     class Action(models.TextChoices):
-        CREATED = "created", "Created"
-        CHANGED = "changed", "Changed"
-        VOIDED = "voided", "Voided"
+        CREATED = "created", _("Created")
+        CHANGED = "changed", _("Changed")
+        VOIDED = "voided", _("Voided")
 
     transaction = models.ForeignKey(
         Transaction,
@@ -447,8 +448,121 @@ class TransactionAuditLog(models.Model):
 
     def save(self, *args, **kwargs):
         if self.pk is not None:
-            raise ValidationError("Audit log entries cannot be modified.")
+            raise ValidationError(_("Audit log entries cannot be modified."))
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        raise ValidationError("Audit log entries cannot be deleted.")
+        raise ValidationError(_("Audit log entries cannot be deleted."))
+
+
+class BankStatementImport(models.Model):
+    """One uploaded bank statement, held as a draft until confirmed.
+
+    Nothing reaches the ledger on upload. The rows are parsed and shown for
+    review first, so a mis-parsed statement is corrected before it becomes
+    transactions rather than after.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", _("Draft")
+        CONFIRMED = "confirmed", _("Confirmed")
+        CANCELLED = "cancelled", _("Cancelled")
+
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        related_name="statement_imports",
+    )
+    original_filename = models.CharField(max_length=255)
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.DRAFT,
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="statement_imports",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return f"{self.original_filename} ({self.get_status_display()})"
+
+    @property
+    def is_draft(self):
+        return self.status == self.Status.DRAFT
+
+    def importable_rows(self):
+        """Rows that would become transactions if confirmed now."""
+        return self.rows.filter(
+            is_skipped=False, parse_error="", transaction__isnull=True
+        )
+
+
+class BankStatementRow(models.Model):
+    """One line of a statement, before it becomes a transaction.
+
+    A row that could not be parsed is kept with its error rather than dropped,
+    so the reviewer can see that the file had a line they need to handle.
+    """
+
+    statement_import = models.ForeignKey(
+        BankStatementImport,
+        on_delete=models.CASCADE,
+        related_name="rows",
+    )
+    row_number = models.PositiveIntegerField()
+    date = models.DateField(null=True, blank=True)
+    description = models.TextField(blank=True)
+    payee = models.CharField(max_length=150, blank=True)
+    amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    currency = models.CharField(
+        max_length=3, choices=Account.Currency.choices, blank=True
+    )
+    transaction_type = models.CharField(
+        max_length=10, choices=Transaction.TransactionType.choices, blank=True
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="statement_rows",
+        null=True,
+        blank=True,
+    )
+    is_skipped = models.BooleanField(default=False)
+    parse_error = models.TextField(blank=True)
+    is_probable_duplicate = models.BooleanField(default=False)
+    transaction = models.ForeignKey(
+        Transaction,
+        on_delete=models.PROTECT,
+        related_name="statement_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["row_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["statement_import", "row_number"],
+                name="unique_row_number_per_import",
+            )
+        ]
+
+    def __str__(self):
+        return f"Row {self.row_number}: {self.amount} {self.currency}"
+
+    @property
+    def is_importable(self):
+        return (
+            not self.is_skipped
+            and not self.parse_error
+            and self.transaction_id is None
+        )

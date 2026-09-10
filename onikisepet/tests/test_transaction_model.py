@@ -1,11 +1,14 @@
+# Asserts the English wording of Transaction.__str__, whose type label is
+# now translated. Turkish rendering is covered in test_localization.py.
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionModelTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.user = self.create_user("transaction_model_user")

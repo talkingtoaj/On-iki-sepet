@@ -1,13 +1,14 @@
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from onikisepet.models import Transaction, TransactionAuditLog
 
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionAuditLogModelTests(TransactionTestMixin, TestCase):
     """The audit trail is the point of a church finance system: nothing may
     change without a durable record of who changed it and why. Audit rows are
@@ -100,6 +101,7 @@ class TransactionAuditLogModelTests(TransactionTestMixin, TestCase):
         self.assertIn(self.user.get_username(), str(log))
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionVoidingTests(TransactionTestMixin, TestCase):
     def setUp(self):
         self.user = self.create_user("void_model_user", is_superuser=True)

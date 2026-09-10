@@ -1,11 +1,12 @@
 from datetime import date
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import ExchangeRateTestMixin, TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class MultiCurrencyTotalsTests(ExchangeRateTestMixin, TransactionTestMixin, TestCase):
     """Money in different currencies must never be added together.
 
@@ -303,3 +304,54 @@ class MultiCurrencyTotalsTests(ExchangeRateTestMixin, TransactionTestMixin, Test
 
         self.assertEqual(sorted(totals), ["TRY", "USD"])
         self.assertNotIn(Decimal("1100.00"), totals.values())
+
+
+@override_settings(LANGUAGE_CODE="en")
+class ZeroAmountConversionTests(ExchangeRateTestMixin, TransactionTestMixin, TestCase):
+    """A zero amount needs no exchange rate.
+
+    The church holds empty USD and EUR accounts. Treating their zero balances
+    as unconvertible marked every total incomplete, permanently, which would
+    train the treasurer to ignore a warning that is meant to matter.
+    """
+
+    def setUp(self):
+        self.calculations = self.get_financial_calculations_module()
+
+    def test_a_zero_amount_does_not_need_a_rate(self):
+        grand_total = self.calculations.calculate_grand_total_in_base(
+            {"TRY": Decimal("100.00"), "EUR": Decimal("0.00")},
+            on_date=date(2026, 9, 9),
+        )
+
+        self.assertTrue(grand_total.is_complete)
+        self.assertEqual(grand_total.missing_currencies, [])
+        self.assertEqual(grand_total.total, Decimal("100.00"))
+
+    def test_a_non_zero_amount_still_needs_a_rate(self):
+        grand_total = self.calculations.calculate_grand_total_in_base(
+            {"TRY": Decimal("100.00"), "EUR": Decimal("0.01")},
+            on_date=date(2026, 9, 9),
+        )
+
+        self.assertFalse(grand_total.is_complete)
+        self.assertEqual(grand_total.missing_currencies, ["EUR"])
+
+    def test_a_zero_amount_produces_no_conversion_note(self):
+        """There is no rate to show and nothing to explain, so showing
+        "0.00 EUR x 1.00" would imply a one-to-one rate that does not exist.
+        """
+        grand_total = self.calculations.calculate_grand_total_in_base(
+            {"EUR": Decimal("0.00")}, on_date=date(2026, 9, 9)
+        )
+
+        self.assertEqual(grand_total.conversions, [])
+        self.assertEqual(grand_total.total, Decimal("0.00"))
+        self.assertTrue(grand_total.is_complete)
+
+    def test_a_negative_zero_balance_is_still_zero(self):
+        grand_total = self.calculations.calculate_grand_total_in_base(
+            {"EUR": Decimal("-0.00")}, on_date=date(2026, 9, 9)
+        )
+
+        self.assertTrue(grand_total.is_complete)

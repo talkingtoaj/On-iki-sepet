@@ -1,6 +1,9 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from onikisepet.usecases.roles import TREASURER
@@ -9,6 +12,7 @@ from onikisepet.views import TRANSACTIONS_PER_PAGE
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionListPaginationTests(TransactionTestMixin, TestCase):
     """The list used to fetch every transaction with no limit, which would
     degrade steadily as the ledger grows.

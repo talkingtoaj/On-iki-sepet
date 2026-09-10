@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "How the books work" %}{% endblock %}
+{% block content %}
+<h1>{% translate "How the books work" %}</h1>
+
+<section>
+  <h2>{% translate "Accounts and categories" %}</h2>
+  <p>{% translate "An account is somewhere money actually sits: the cash box, a bank account, a savings fund. A category is what the money was for: rent, offerings, aid." %}</p>
+  <p>{% translate "Every account has one currency and keeps its own balance. Categories are separate for income and expense, so the same name can exist for both." %}</p>
+</section>
+
+<section>
+  <h2>{% translate "Currencies" %}</h2>
+  <p>{% translate "Amounts in different currencies are never added together. Each currency gets its own income, expense and net figure." %}</p>
+  <p>{% blocktranslate with currency=base_currency %}The dashboard also shows a grand total converted into {{ currency }}, using the exchange rate on file for the reporting date. It always states which rate it used.{% endblocktranslate %}</p>
+  <p>{% translate "If there is no rate on file for a currency, that currency is left out of the grand total and the total is marked incomplete. It is never quietly dropped." %}</p>
+</section>
+
+<section>
+  <h2>{% translate "Balances and periods" %}</h2>
+  <p>{% translate "Income and expense figures can be narrowed to a period. Balances cannot: a balance is the cumulative position including the opening balance, so it always covers everything up to today." %}</p>
+</section>
+
+<section>
+  <h2>{% translate "Fixing a mistake" %}</h2>
+  <p>{% translate "Nothing is ever deleted. A transaction can be corrected, and every change is recorded with who made it, when, and why." %}</p>
+  <p>{% translate "If an entry should not have existed at all, void it. Voiding keeps the record and its history, but removes it from every report and balance." %}</p>
+</section>
+
+<section>
+  <h2>{% translate "Receipts" %}</h2>
+  <p>{% translate "Cash expenses can carry a receipt image or PDF. Receipts hold financial information, so they are stored privately and only accessible to signed-in users with a role." %}</p>
+</section>
+
+<p><a href="{% url 'record_type_guide' %}">{% translate "Which record should I use?" %}</a></p>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Which record should I use?" %}{% endblock %}
+{% block content %}
+<h1>{% translate "Which record should I use?" %}</h1>
+
+<p>{% translate "Every entry is one of three kinds. Choosing the right one keeps the reports correct, because transfers are counted differently from income and expenses." %}</p>
+
+<section>
+  <h2>{% translate "Income" %}</h2>
+  <p>{% translate "Money coming in to the church: offerings, online donations, designated gifts." %}</p>
+  <p><strong>{% translate "Needs:" %}</strong> {% translate "the account it arrived in, and an income category." %}</p>
+</section>
+
+<section>
+  <h2>{% translate "Expense" %}</h2>
+  <p>{% translate "Money going out: rent, bills, staff, aid, supplies." %}</p>
+  <p><strong>{% translate "Needs:" %}</strong> {% translate "the account it was paid from, and an expense category." %}</p>
+  <p>{% translate "If it was paid in cash, use the cash expense form instead so you can attach the receipt." %}</p>
+</section>
+
+<section>
+  <h2>{% translate "Transfer" %}</h2>
+  <p>{% translate "Moving the church's own money between its own accounts, for example from the donation account to the expense account." %}</p>
+  <p><strong>{% translate "Needs:" %}</strong> {% translate "a source account and a target account, in the same currency." %}</p>
+  <p><strong>{% translate "Important:" %}</strong> {% translate "a transfer is never income and never an expense. The church is no richer or poorer for moving its own money, so transfers are excluded from income, expense and net figures." %}</p>
+</section>
+
+<section>
+  <h2>{% translate "Cash expense with a receipt" %}</h2>
+  <p>{% translate "A cash purchase where you have the till receipt. The receipt is uploaded with the entry, so the evidence stays attached to the record." %}</p>
+</section>
+
+<p><a href="{% url 'finance_guide' %}">{% translate "How the books work" %}</a></p>
+{% endblock %}

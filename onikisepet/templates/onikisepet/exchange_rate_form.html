@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Add Exchange Rate{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Add Exchange Rate" %}{% endblock %}
 {% block content %}
-<h1>Add Exchange Rate</h1>
+<h1>{% translate "Add Exchange Rate" %}</h1>
 
-<p>Enter how many {{ base_currency }} one unit of the foreign currency is worth.</p>
+<p>{% blocktranslate %}Enter how many {{ base_currency }} one unit of the foreign currency is worth.{% endblocktranslate %}</p>
 
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
-  <button type="submit">Save</button>
+  <button type="submit">{% translate "Save" %}</button>
 </form>
 {% endblock %}

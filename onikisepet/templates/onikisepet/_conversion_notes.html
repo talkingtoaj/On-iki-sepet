@@ -3,6 +3,7 @@ Shows how a converted grand total was produced, and names any currency that
 could not be converted. A total that silently omits a currency would understate
 the real position, so the omission is always stated.
 {% endcomment %}
+{% load i18n %}
 {% if grand_total.conversions %}
     <ul>
         {% for conversion in grand_total.conversions %}
@@ -12,9 +13,9 @@ the real position, so the omission is always stated.
                     {% if conversion.is_convertible %}
                         &times; {{ conversion.rate|floatformat:2 }}
                         = {{ conversion.converted|floatformat:2 }} {{ grand_total.base_currency }}
-                        (rate of {{ conversion.rate_date }})
+                        ({% blocktranslate with when=conversion.rate_date %}rate of {{ when }}{% endblocktranslate %})
                     {% else %}
-                        &mdash; no exchange rate on file, excluded from the total
+                        &mdash; {% translate "no exchange rate on file, excluded from the total" %}
                     {% endif %}
                 </li>
             {% endif %}
@@ -22,6 +23,6 @@ the real position, so the omission is always stated.
     </ul>
 {% endif %}
 {% if not grand_total.is_complete %}
-    <p><strong>Warning:</strong> this total is incomplete. There is
-    no exchange rate for {{ grand_total.missing_currencies|join:", " }}.</p>
+    <p><strong>{% translate "Warning:" %}</strong>
+    {% blocktranslate with currencies=grand_total.missing_currencies|join:", " %}this total is incomplete. There is no exchange rate for {{ currencies }}.{% endblocktranslate %}</p>
 {% endif %}

@@ -1,9 +1,11 @@
 # On İki Sepet
 
 Church finance tracking: accounts, categorised income and expenses, transfers
-between accounts, cash-expense receipts, and per-currency reporting.
+between accounts, cash-expense receipts, bank-statement import, and
+per-currency reporting with an audit trail.
 
-Django 5.2 + Django Templates, SQLite locally and PostgreSQL in production.
+Bilingual (Turkish and English) with a language selector. Django 5.2 + Django
+Templates, SQLite locally and PostgreSQL in production.
 
 ## Requirements
 
@@ -13,11 +15,17 @@ Django 5.2 + Django Templates, SQLite locally and PostgreSQL in production.
 ## Setup
 
 ```bash
-uv sync                     # create .venv and install locked dependencies
+uv sync                                     # create .venv, install locked deps
+uv run python manage.py compilemessages -l tr   # build the Turkish catalogue
 uv run python manage.py migrate
+uv run python manage.py seed_roles          # Treasurer / Data Entry / Viewer
+uv run python manage.py seed_kut_data       # chart of accounts and categories
 uv run python manage.py createsuperuser
 uv run python manage.py runserver
 ```
+
+`compilemessages` needs `gettext` installed (`apt install gettext`). The `.mo`
+files are not committed, because a stale compiled catalogue fails silently.
 
 `pyproject.toml` plus `uv.lock` are the single source of truth for dependencies.
 There is no `requirements.txt`.
@@ -86,6 +94,8 @@ Nothing is required. Optional overrides:
 | `DJANGO_ENV` | `development` | `development` or `production` |
 | `DJANGO_DEBUG` | `1` in development | Set `0` to test with debug off |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1],testserver` | Comma-separated |
+| `DJANGO_LANGUAGE_CODE` | `tr` | Default interface language |
+| `DJANGO_TIME_ZONE` | `Europe/Istanbul` | Reporting dates follow this, not the server clock |
 
 ### Production (`DJANGO_ENV=production`)
 
@@ -100,6 +110,9 @@ Nothing is required. Optional overrides:
 | `POSTGRES_PORT` | no | Omit when using a socket |
 | `GS_BUCKET_NAME` | no | Enables Google Cloud Storage for receipts |
 | `GS_LOCATION` | no | Prefix within the bucket, default `receipts` |
+| `DJANGO_EMAIL_HOST` | yes | Required for password reset; boot fails without it |
+| `DJANGO_EMAIL_PORT` / `_USER` / `_PASSWORD` / `_USE_TLS` | no | SMTP details |
+| `DJANGO_DEFAULT_FROM_EMAIL` | no | Sender address for reset emails |
 
 Generate a secret key with:
 
@@ -120,6 +133,24 @@ DJANGO_ENV=production ... uv run python manage.py check --deploy
 
 Receipts must not be publicly readable. With `GS_BUCKET_NAME` set, URLs are
 signed and expire after 15 minutes; keep the bucket private.
+
+## Deployment
+
+`Dockerfile` builds with uv against the lock file, collects static files and
+compiles translations at build time, and runs unprivileged. Migrations
+deliberately do **not** run from the entrypoint — Cloud Run cold-starts several
+containers at once and they would race the same migration.
+
+`GET /health/` reports database reachability for the platform health check.
+`scripts/backup_database.sh` takes a dump before a risky migration.
+
+Full procedure, including first-time setup and rollback: see
+[`docs/deployment/runbook.md`](docs/deployment/runbook.md).
+
+Note on dependencies: gunicorn, psycopg and django-storages are plain runtime
+dependencies rather than an optional `production` extra. The extra saves a few
+megabytes in development but risks a deploy or a CI job running without them,
+which is the more expensive failure.
 
 ## Project layout
 

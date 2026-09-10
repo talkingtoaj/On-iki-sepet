@@ -12,6 +12,7 @@ from onikisepet.usecases.roles import TREASURER
 from .helpers import ExchangeRateTestMixin, TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class ReportingDateTests(ExchangeRateTestMixin, TransactionTestMixin, TestCase):
     """Which day a report is valued on decides which exchange rate applies, so
     it must come from Django's configured timezone rather than the machine's

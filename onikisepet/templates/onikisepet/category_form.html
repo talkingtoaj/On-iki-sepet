@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Create Category{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Create Category" %}{% endblock %}
 {% block content %}
-<h1>Create Category</h1>
+<h1>{% translate "Create Category" %}</h1>
 
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
-  <button type="submit">Save</button>
+  <button type="submit">{% translate "Save" %}</button>
 </form>
 {% endblock %}

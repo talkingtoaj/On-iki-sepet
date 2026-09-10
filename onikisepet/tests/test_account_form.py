@@ -1,11 +1,12 @@
 from decimal import Decimal
 from typing import Any
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import AccountTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class AccountFormTests(AccountTestMixin, TestCase):
     def _build_form_data(
         self,

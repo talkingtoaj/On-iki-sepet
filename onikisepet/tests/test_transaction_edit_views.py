@@ -1,6 +1,9 @@
+# These tests assert the English wording of the interface. The app now
+# defaults to Turkish, so the language is pinned here rather than left
+# implicit; Turkish rendering is covered in test_localization.py.
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from onikisepet.models import TransactionAuditLog
@@ -9,6 +12,7 @@ from onikisepet.usecases.roles import DATA_ENTRY, TREASURER, VIEWER
 from .helpers import TransactionTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class TransactionEditViewTests(TransactionTestMixin, TestCase):
     """A mistyped transaction can be corrected in place, but never silently:
     the edit requires a reason and writes an audit row per changed field.
@@ -68,7 +72,9 @@ class TransactionEditViewTests(TransactionTestMixin, TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "1500.00")
+        # The amount field groups thousands in the active language's
+        # convention, so under English it reads 1,500.00 rather than 1500.00.
+        self.assertContains(response, "1,500.00")
 
     def test_data_entry_cannot_edit_a_transaction(self):
         self._login(self.data_entry)

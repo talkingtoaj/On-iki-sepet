@@ -1,9 +1,10 @@
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .helpers import CategoryTestMixin
 
 
+@override_settings(LANGUAGE_CODE="en")
 class CategoryModelTests(CategoryTestMixin, TestCase):
     def test_category_can_be_created_with_income_type(self):
         category = self.create_category(name="Donation", category_type="income")
