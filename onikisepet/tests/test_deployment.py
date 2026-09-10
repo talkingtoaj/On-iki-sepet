@@ -213,6 +213,28 @@ class CloudBuildPipelineTests(TestCase):
         # would pass while asserting nothing at all.
         self.assertGreaterEqual(len(checked), 2)
 
+    def test_django_steps_run_through_uv(self):
+        """The image installs dependencies into the uv virtualenv at
+        /app/.venv, which a bare interpreter does not see. `python manage.py`
+        fails with ModuleNotFoundError: No module named 'django' only once the
+        step actually runs in the pipeline, so it is asserted here instead.
+        """
+        checked = []
+
+        for step_id, body in self._steps_before_deploy():
+            if "manage.py" not in body:
+                continue
+            checked.append(step_id)
+            # Assert the whole sequence. A negative check on "- python" cannot
+            # work: the correct form contains it, preceded by "- run".
+            self.assertIn(
+                "- uv\n      - run\n      - python\n      - manage.py",
+                body,
+                f"step {step_id} must invoke manage.py as `uv run python`",
+            )
+
+        self.assertGreaterEqual(len(checked), 2)
+
     def test_seeding_runs_after_the_migration(self):
         """Seeding writes rows, so it needs the schema to exist first."""
         self.assertLess(self.text.index("- id: migrate"), self.text.index("- id: seed-roles"))

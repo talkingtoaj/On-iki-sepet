@@ -101,6 +101,11 @@ steps:
       - -e
       - DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend
       - --
+      # uv run, not bare python: the image installs dependencies into the uv
+      # virtualenv at /app/.venv, which a bare interpreter does not see. The
+      # Dockerfile's own CMD runs gunicorn the same way.
+      - uv
+      - run
       - python
       - manage.py
       - check_database_lineage
@@ -135,6 +140,11 @@ steps:
       - -e
       - DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend
       - --
+      # uv run, not bare python: the image installs dependencies into the uv
+      # virtualenv at /app/.venv, which a bare interpreter does not see. The
+      # Dockerfile's own CMD runs gunicorn the same way.
+      - uv
+      - run
       - python
       - manage.py
       - migrate
@@ -174,6 +184,11 @@ steps:
       - -e
       - DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend
       - --
+      # uv run, not bare python: the image installs dependencies into the uv
+      # virtualenv at /app/.venv, which a bare interpreter does not see. The
+      # Dockerfile's own CMD runs gunicorn the same way.
+      - uv
+      - run
       - python
       - manage.py
       - seed_roles
@@ -206,6 +221,11 @@ steps:
       - -e
       - DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend
       - --
+      # uv run, not bare python: the image installs dependencies into the uv
+      # virtualenv at /app/.venv, which a bare interpreter does not see. The
+      # Dockerfile's own CMD runs gunicorn the same way.
+      - uv
+      - run
       - python
       - manage.py
       - seed_kut_data
