@@ -35,6 +35,18 @@ RUN DJANGO_ENV=production \
     uv run python manage.py collectstatic --noinput \
     && uv run python manage.py compilemessages -l tr
 
+# The entrypoint is copied and made executable while still root, and stays
+# root-owned so the unprivileged user cannot rewrite the script it is about to
+# execute.
+#
+# chmod is a separate RUN rather than COPY --chmod on purpose: --chmod requires
+# BuildKit, and Cloud Build's gcr.io/cloud-builders/docker runs the legacy
+# builder, where it fails the build outright. Docker's COPY does preserve the
+# source mode, so this is also insurance against a checkout that has lost the
+# executable bit.
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod 755 /entrypoint.sh
+
 # Run unprivileged.
 RUN useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app
@@ -42,7 +54,6 @@ USER appuser
 
 EXPOSE 8000
 
-COPY --chmod=755 docker/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Cloud Run sets $PORT; default to 8000 for local runs.

@@ -68,6 +68,44 @@ class DeploymentArtefactTests(TestCase):
 
         self.assertIn("build-time-only", dockerfile)
 
+    def test_the_dockerfile_avoids_buildkit_only_syntax(self):
+        """Cloud Build's gcr.io/cloud-builders/docker runs the legacy builder,
+        where these fail the build outright. Local docker enables BuildKit by
+        default, so this only shows up in the pipeline: COPY --chmod passed
+        every local build and then broke the first real deploy.
+        """
+        # Only the instructions matter. The comment above the COPY names
+        # --chmod to explain why it is not used, and must not trip this.
+        instructions = "\n".join(
+            line
+            for line in (ROOT / "Dockerfile").read_text().splitlines()
+            if not line.lstrip().startswith("#")
+        )
+
+        for buildkit_only in ["--chmod", "--mount", "--link"]:
+            self.assertNotIn(
+                buildkit_only,
+                instructions,
+                f"{buildkit_only} requires BuildKit, which Cloud Build does not enable",
+            )
+
+    def test_the_entrypoint_is_executable_in_the_image(self):
+        """Dropped along with COPY --chmod, this would leave the container
+        unable to start.
+        """
+        dockerfile = (ROOT / "Dockerfile").read_text()
+
+        self.assertIn("chmod 755 /entrypoint.sh", dockerfile)
+
+    def test_the_entrypoint_is_made_executable_before_dropping_root(self):
+        """After USER appuser, a chmod on a root-owned file at / fails."""
+        dockerfile = (ROOT / "Dockerfile").read_text()
+
+        self.assertLess(
+            dockerfile.index("chmod 755 /entrypoint.sh"),
+            dockerfile.index("USER appuser"),
+        )
+
     def test_backup_script_exists_and_is_executable(self):
         script = ROOT / "scripts" / "backup_database.sh"
 
