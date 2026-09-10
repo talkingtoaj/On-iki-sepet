@@ -235,6 +235,65 @@ class CloudBuildPipelineTests(TestCase):
 
         self.assertGreaterEqual(len(checked), 2)
 
+    def _declared_substitutions(self):
+        """The substitutions block's defaults, as a plain dict."""
+        block = self.text.split("substitutions:", 1)[1].split("availableSecrets:", 1)[0]
+        values = {}
+
+        for line in block.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("_") or ":" not in stripped:
+                continue
+            name, _, value = stripped.partition(":")
+            values[name.strip()] = value.strip()
+
+        return values
+
+    def test_the_env_var_delimiter_appears_in_no_value(self):
+        """gcloud's ^X^ syntax picks a delimiter for --set-env-vars. If X also
+        occurs inside a value, gcloud splits mid-value and rejects the
+        fragment. This is not hypothetical: the delimiter was once @, the
+        from-address contains one, and the deploy failed with
+        "Bad syntax for dict arg: [example.org]".
+        """
+        line = next(
+            text for text in self.text.splitlines() if "--set-env-vars=" in text
+        )
+        payload = line.split("--set-env-vars=", 1)[1]
+
+        self.assertTrue(payload.startswith("^"), "expected gcloud ^X^ delimiter syntax")
+        delimiter = payload[1]
+        pairs = payload[3:]
+
+        substitutions = self._declared_substitutions()
+
+        for pair in pairs.split(delimiter):
+            _, _, value = pair.partition("=")
+            resolved = value
+            for name, default in substitutions.items():
+                resolved = resolved.replace(f"${{{name}}}", default)
+
+            self.assertNotIn(
+                delimiter,
+                resolved,
+                f"value {resolved!r} contains the delimiter {delimiter!r}",
+            )
+
+    def test_every_env_var_pair_is_well_formed(self):
+        """A missing = would be read as a key with no value."""
+        line = next(
+            text for text in self.text.splitlines() if "--set-env-vars=" in text
+        )
+        payload = line.split("--set-env-vars=", 1)[1]
+        delimiter = payload[1]
+
+        pairs = payload[3:].split(delimiter)
+        self.assertGreaterEqual(len(pairs), 8)
+
+        for pair in pairs:
+            self.assertIn("=", pair, f"malformed env var entry {pair!r}")
+            self.assertTrue(pair.split("=", 1)[0].isupper(), f"odd env var name {pair!r}")
+
     def test_seeding_runs_after_the_migration(self):
         """Seeding writes rows, so it needs the schema to exist first."""
         self.assertLess(self.text.index("- id: migrate"), self.text.index("- id: seed-roles"))

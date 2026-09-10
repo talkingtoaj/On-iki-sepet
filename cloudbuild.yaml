@@ -243,7 +243,7 @@ steps:
       - --allow-unauthenticated
       - --add-cloudsql-instances=$PROJECT_ID:${_REGION}:${_INSTANCE}
       - --set-secrets=DJANGO_SECRET_KEY=oniki-sepet-django-secret-key:latest,POSTGRES_PASSWORD=oniki-sepet-postgres-password:latest
-      - --set-env-vars=^@^DJANGO_ENV=production@DJANGO_ALLOWED_HOSTS=.run.app@DJANGO_CSRF_TRUSTED_ORIGINS=https://*.run.app@POSTGRES_DB=${_DB_NAME}@POSTGRES_USER=${_DB_USER}@POSTGRES_HOST=/cloudsql/$PROJECT_ID:${_REGION}:${_INSTANCE}@GS_BUCKET_NAME=${_BUCKET}@DJANGO_SECURE_SSL_REDIRECT=true@DJANGO_EMAIL_BACKEND=${_EMAIL_BACKEND}@DJANGO_DEFAULT_FROM_EMAIL=${_FROM_EMAIL}
+      - --set-env-vars=^;^DJANGO_ENV=production;DJANGO_ALLOWED_HOSTS=.run.app;DJANGO_CSRF_TRUSTED_ORIGINS=https://*.run.app;POSTGRES_DB=${_DB_NAME};POSTGRES_USER=${_DB_USER};POSTGRES_HOST=/cloudsql/$PROJECT_ID:${_REGION}:${_INSTANCE};GS_BUCKET_NAME=${_BUCKET};DJANGO_SECURE_SSL_REDIRECT=true;DJANGO_EMAIL_BACKEND=${_EMAIL_BACKEND};DJANGO_DEFAULT_FROM_EMAIL=${_FROM_EMAIL}
       - --memory=512Mi
       - --cpu=1
       - --min-instances=0
