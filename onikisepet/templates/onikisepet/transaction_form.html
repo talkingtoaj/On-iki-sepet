@@ -1,16 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Create Transaction</title>
-</head>
-<body>
-    <h1>Create Transaction</h1>
+{% extends "base.html" %}
+{% block title %}Create Transaction{% endblock %}
+{% block content %}
+<h1>Create Transaction</h1>
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Save</button>
-    </form>
-</body>
-</html>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+</form>
+{% endblock %}

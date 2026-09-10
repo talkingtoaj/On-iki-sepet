@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Edit Transaction {{ transaction.pk }}{% endblock %}
+{% block content %}
+<h1>Edit Transaction</h1>
+
+<p>Every change is recorded in the audit trail with the reason you give below.</p>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save change</button>
+</form>
+
+<p><a href="{% url 'transaction_detail' transaction.pk %}">Cancel</a></p>
+{% endblock %}

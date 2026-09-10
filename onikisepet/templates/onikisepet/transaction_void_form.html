@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Void Transaction {{ transaction.pk }}{% endblock %}
+{% block content %}
+<h1>Void Transaction</h1>
+
+<p>
+  Voiding removes this transaction from all reports and balances. The record
+  itself is kept, along with who voided it and why. It cannot be deleted.
+</p>
+
+<dl>
+  <dt>Date</dt><dd>{{ transaction.date }}</dd>
+  <dt>Type</dt><dd>{{ transaction.get_transaction_type_display }}</dd>
+  <dt>Amount</dt><dd>{{ transaction.amount|floatformat:2 }} {{ transaction.currency }}</dd>
+  <dt>Description</dt><dd>{{ transaction.description|default:"-" }}</dd>
+</dl>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Void this transaction</button>
+</form>
+
+<p><a href="{% url 'transaction_detail' transaction.pk %}">Cancel</a></p>
+{% endblock %}

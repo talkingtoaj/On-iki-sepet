@@ -1,5 +1,5 @@
-from importlib import import_module
 from decimal import Decimal
+from importlib import import_module
 from typing import Any, cast
 
 from django.apps import apps
@@ -8,6 +8,7 @@ from django.contrib.auth.models import Group
 from django.db.models import Model
 
 from onikisepet.models import Category
+from onikisepet.usecases.roles import seed_roles
 
 
 class CategoryTestMixin:
@@ -248,6 +249,9 @@ class TransactionTestMixin:
             is_superuser=is_superuser,
         )
         if group_name:
+            # Seed the real role permissions so tests exercise the actual
+            # authorisation wiring rather than an empty group.
+            seed_roles()
             group, _ = Group.objects.get_or_create(name=group_name)
             user.groups.add(group)
         return user
@@ -331,3 +335,65 @@ class TransactionTestMixin:
             raise AssertionError(
                 "Create onikisepet.usecases.financial_calculations for transaction totals and balances."
             ) from exc
+
+
+class ExchangeRateTestMixin:
+    @classmethod
+    def get_exchange_rate_model(cls) -> type[Model]:
+        try:
+            model = apps.get_model("onikisepet", "ExchangeRate")
+        except LookupError as exc:
+            raise AssertionError(
+                "ExchangeRate model must be implemented as onikisepet.ExchangeRate."
+            ) from exc
+
+        if model is None:
+            raise AssertionError(
+                "ExchangeRate model must be implemented as onikisepet.ExchangeRate."
+            )
+        return cast(type[Model], model)
+
+    @classmethod
+    def create_exchange_rate(
+        cls,
+        *,
+        currency="USD",
+        rate_to_base=Decimal("34.00"),
+        effective_date="2026-09-01",
+    ) -> Model:
+        exchange_rate_model = cls.get_exchange_rate_model()
+        return cast(
+            Model,
+            exchange_rate_model.objects.create(
+                currency=currency,
+                rate_to_base=rate_to_base,
+                effective_date=effective_date,
+            ),
+        )
+
+
+# Minimal byte sequences carrying the real magic numbers for each accepted
+# receipt format. Receipt validation sniffs the file header, so test uploads
+# have to look like genuine files rather than arbitrary bytes.
+JPEG_BYTES = b"\xff\xd8\xff\xe0\x00\x10JFIF" + b"\x00" * 32
+PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+PDF_BYTES = b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n" + b"\x00" * 32
+
+RECEIPT_BYTES_BY_EXTENSION = {
+    "jpg": JPEG_BYTES,
+    "jpeg": JPEG_BYTES,
+    "png": PNG_BYTES,
+    "pdf": PDF_BYTES,
+}
+
+
+class ReceiptFileTestMixin:
+    @staticmethod
+    def make_receipt_file(name="receipt.jpg", content=None, content_type="image/jpeg"):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        if content is None:
+            extension = name.rsplit(".", 1)[-1].lower()
+            content = RECEIPT_BYTES_BY_EXTENSION.get(extension, JPEG_BYTES)
+
+        return SimpleUploadedFile(name, content, content_type=content_type)

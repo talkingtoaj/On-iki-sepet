@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Exchange Rates{% endblock %}
+{% block content %}
+<h1>Exchange Rates</h1>
+
+<p>Rates convert one unit of a foreign currency into {{ base_currency }}.</p>
+
+{% if exchange_rates %}
+  <ul>
+    {% for rate in exchange_rates %}
+      <li>
+        {{ rate.effective_date }}: 1 {{ rate.currency }}
+        = {{ rate.rate_to_base|floatformat:2 }} {{ base_currency }}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No exchange rates recorded yet.</p>
+{% endif %}
+
+<p><a href="{% url 'exchange_rate_create' %}">Add exchange rate</a></p>
+{% endblock %}

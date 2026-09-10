@@ -62,6 +62,15 @@ class CategoryFormTests(CategoryTestMixin, TestCase):
         type_field = self._resolve_type_field_name(set(category_form_class().fields.keys()))
         self.assertIn(type_field, form.errors)
 
+    def test_form_allows_the_same_name_for_a_different_category_type(self):
+        self.create_category(name="Missions", category_type="income")
+        category_form_class = self.get_category_form_class()
+        form = category_form_class(
+            data=self._build_form_data(name="Missions", category_type="expense")
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+
     def test_form_is_invalid_with_duplicate_category_name(self):
         self.create_category(name="Bills", category_type="expense")
         category_form_class = self.get_category_form_class()

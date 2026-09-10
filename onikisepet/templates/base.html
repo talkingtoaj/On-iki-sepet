@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}On İki Sepet{% endblock %}</title>
+</head>
+<body>
+    {% if user.is_authenticated %}
+        <header>
+            <nav>
+                <a href="{% url 'report_dashboard' %}">Reports</a>
+                <a href="{% url 'transaction_list' %}">Transactions</a>
+                <a href="{% url 'account_list' %}">Accounts</a>
+                <a href="{% url 'category_list' %}">Categories</a>
+                <a href="{% url 'exchange_rate_list' %}">Exchange Rates</a>
+            </nav>
+            <p>
+                Signed in as {{ user.get_username }}.
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Sign out</button>
+                </form>
+            </p>
+        </header>
+        <hr>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

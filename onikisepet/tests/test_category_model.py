@@ -46,7 +46,7 @@ class CategoryModelTests(CategoryTestMixin, TestCase):
         with self.assertRaises(ValidationError):
             category.full_clean()
 
-    def test_category_name_must_be_unique(self):
+    def test_category_name_must_be_unique_within_a_type(self):
         self.create_category(name="Bills", category_type="expense")
         duplicate = self.get_category_model()(
             **self.build_category_kwargs(name="Bills", category_type="expense")
@@ -54,6 +54,25 @@ class CategoryModelTests(CategoryTestMixin, TestCase):
 
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
+
+    def test_the_same_name_is_allowed_for_income_and_expense(self):
+        """A church commonly needs a "Missions" income category for gifts
+        received and a "Missions" expense category for gifts sent. A globally
+        unique name made that impossible.
+        """
+        self.create_category(name="Missions", category_type="income")
+        expense_twin = self.get_category_model()(
+            **self.build_category_kwargs(
+                name="Missions", category_type="expense"
+            )
+        )
+
+        expense_twin.full_clean()
+        expense_twin.save()
+
+        self.assertEqual(
+            self.get_category_model().objects.filter(name="Missions").count(), 2
+        )
 
     def test_str_returns_category_name(self):
         category = self.create_category(name="Hospitality", category_type="expense")

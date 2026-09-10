@@ -1,12 +1,41 @@
 [project]
 name = "on-iki-sepet"
 version = "0.1.0"
-description = "Add your description here"
+description = "On Iki Sepet - church finance tracking"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "asgiref==3.11.1",
     "django==5.2.14",
+    "django-storages[google]>=1.14.6",
+    "gunicorn>=26.2.0",
+    "psycopg[binary]>=3.3.5",
     "sqlparse==0.5.5",
     "tzdata==2026.2",
+    "whitenoise>=6.12.0",
 ]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.16.0",
+    "ruff>=0.16.6",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+extend-exclude = ["onikisepet/migrations"]
+
+[tool.ruff.lint]
+# A deliberate, project-owned ruleset. Without this the linter inherits
+# whatever global config a developer happens to have.
+select = ["E", "F", "I", "B", "SIM", "UP", "DJ", "DTZ"]
+ignore = [
+    "E501",  # Long lines are mostly test data and validation messages.
+    "B008",  # Django field defaults are call-in-default by design.
+    "DJ012", # Method ordering only; not worth reshuffling tested models.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test helpers reach for fields by name on purpose, to assert they exist.
+"onikisepet/tests/*" = ["B009"]

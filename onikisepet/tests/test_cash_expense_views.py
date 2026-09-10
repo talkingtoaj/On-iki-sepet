@@ -1,17 +1,18 @@
+import tempfile
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.shortcuts import resolve_url
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from onikisepet.models import Receipt
 
-from .helpers import TransactionTestMixin
+from .helpers import ReceiptFileTestMixin, TransactionTestMixin
 
 
-class CashExpenseViewTests(TransactionTestMixin, TestCase):
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class CashExpenseViewTests(ReceiptFileTestMixin, TransactionTestMixin, TestCase):
     def setUp(self):
         self.cash_expense_create_url = reverse("cash_expense_create")
         self.transaction_list_url = reverse("transaction_list")
@@ -35,11 +36,7 @@ class CashExpenseViewTests(TransactionTestMixin, TestCase):
         )
 
     def _uploaded_file(self, name="receipt.jpg"):
-        return SimpleUploadedFile(
-            name,
-            b"fake receipt content",
-            content_type="image/jpeg",
-        )
+        return self.make_receipt_file(name)
 
     def _valid_payload(self, *, receipt_name="receipt.jpg"):
         return {

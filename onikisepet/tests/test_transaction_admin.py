@@ -127,3 +127,93 @@ class TransactionAdminTests(TransactionTestMixin, TestCase):
         transaction_admin.save_model(request, transaction, form=None, change=False)
 
         self.assertEqual(transaction.created_by, self.user)
+
+
+class TransactionAdminAuditTests(TransactionTestMixin, TestCase):
+    """The admin is a write path like any other, so it must not be able to
+    change a transaction without leaving an audit row.
+    """
+
+    def setUp(self):
+        self.user = self.create_user("admin_audit_user", is_superuser=True)
+        self.account = self.create_account(
+            name="Cash Account",
+            account_type="cash",
+            account_purpose="cash",
+            currency="TRY",
+        )
+        self.category = self.create_category(name="Supplies", category_type="expense")
+        self.transaction = self.create_transaction(
+            transaction_type="expense",
+            amount=Decimal("100.00"),
+            source_account=self.account,
+            category=self.category,
+            created_by=self.user,
+        )
+
+    def _admin(self):
+        from onikisepet.models import Transaction
+
+        return admin.site._registry[Transaction]
+
+    def _request(self):
+        request = RequestFactory().post("/admin/onikisepet/transaction/")
+        request.user = self.user
+        return request
+
+    def test_creating_via_admin_records_a_created_row(self):
+        from onikisepet.models import Transaction, TransactionAuditLog
+
+        new_transaction = Transaction(
+            date="2026-05-30",
+            transaction_type="expense",
+            amount=Decimal("40.00"),
+            source_account=self.account,
+            category=self.category,
+        )
+
+        self._admin().save_model(
+            self._request(), new_transaction, form=None, change=False
+        )
+
+        self.assertTrue(
+            TransactionAuditLog.objects.filter(
+                transaction=new_transaction,
+                action=TransactionAuditLog.Action.CREATED,
+            ).exists()
+        )
+
+    def test_changing_via_admin_records_the_field_change(self):
+        from onikisepet.models import TransactionAuditLog
+
+        self.transaction.amount = Decimal("75.00")
+
+        self._admin().save_model(
+            self._request(), self.transaction, form=None, change=True
+        )
+
+        log = TransactionAuditLog.objects.get(
+            transaction=self.transaction,
+            action=TransactionAuditLog.Action.CHANGED,
+            field_name="amount",
+        )
+        self.assertEqual(log.old_value, "100.00")
+        self.assertEqual(log.new_value, "75.00")
+        self.assertEqual(log.performed_by, self.user)
+
+    def test_transactions_cannot_be_deleted_from_the_admin(self):
+        """Void is the only way to retire a transaction."""
+        self.assertFalse(
+            self._admin().has_delete_permission(self._request(), self.transaction)
+        )
+
+    def test_audit_log_is_registered_and_fully_read_only(self):
+        from onikisepet.models import TransactionAuditLog
+
+        self.assertIn(TransactionAuditLog, admin.site._registry)
+        log_admin = admin.site._registry[TransactionAuditLog]
+        request = self._request()
+
+        self.assertFalse(log_admin.has_add_permission(request))
+        self.assertFalse(log_admin.has_change_permission(request))
+        self.assertFalse(log_admin.has_delete_permission(request))

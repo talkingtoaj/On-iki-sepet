@@ -1,0 +1,27 @@
+{% comment %}
+Shows how a converted grand total was produced, and names any currency that
+could not be converted. A total that silently omits a currency would understate
+the real position, so the omission is always stated.
+{% endcomment %}
+{% if grand_total.conversions %}
+    <ul>
+        {% for conversion in grand_total.conversions %}
+            {% if conversion.currency != grand_total.base_currency %}
+                <li>
+                    {{ conversion.amount|floatformat:2 }} {{ conversion.currency }}
+                    {% if conversion.is_convertible %}
+                        &times; {{ conversion.rate|floatformat:2 }}
+                        = {{ conversion.converted|floatformat:2 }} {{ grand_total.base_currency }}
+                        (rate of {{ conversion.rate_date }})
+                    {% else %}
+                        &mdash; no exchange rate on file, excluded from the total
+                    {% endif %}
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+{% endif %}
+{% if not grand_total.is_complete %}
+    <p><strong>Warning:</strong> this total is incomplete. There is
+    no exchange rate for {{ grand_total.missing_currencies|join:", " }}.</p>
+{% endif %}

@@ -1,5 +1,8 @@
 from django.db import transaction as db_transaction
-from onikisepet.models import Transaction, Receipt
+
+from onikisepet.models import Receipt, Transaction
+from onikisepet.usecases import audit
+
 
 def create_cash_transaction(form, user):
     with db_transaction.atomic():
@@ -12,3 +15,6 @@ def create_cash_transaction(form, user):
             original_filename=form.get_original_filename(),
             uploaded_by=user,
         )
+        audit.record_created(created_transaction, user)
+
+    return created_transaction

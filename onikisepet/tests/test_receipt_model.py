@@ -1,13 +1,14 @@
+import tempfile
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
-from .helpers import TransactionTestMixin
+from .helpers import ReceiptFileTestMixin, TransactionTestMixin
 
 
-class ReceiptModelTests(TransactionTestMixin, TestCase):
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class ReceiptModelTests(ReceiptFileTestMixin, TransactionTestMixin, TestCase):
     def setUp(self):
         self.user = self.create_user("receipt_user")
         self.cash_account = self.create_account(
@@ -40,11 +41,7 @@ class ReceiptModelTests(TransactionTestMixin, TestCase):
         return Receipt
 
     def create_uploaded_file(self, name="receipt.jpg"):
-        return SimpleUploadedFile(
-            name,
-            b"fake receipt content",
-            content_type="image/jpeg",
-        )
+        return self.make_receipt_file(name)
 
     def create_cash_expense_transaction(self):
         return self.create_transaction(

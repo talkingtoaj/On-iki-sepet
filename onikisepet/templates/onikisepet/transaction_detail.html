@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Transaction {{ transaction.pk }}{% endblock %}
+{% block content %}
+{% if transaction.is_void %}
+  <p><strong>VOIDED</strong> on {{ transaction.voided_at }}
+  by {{ transaction.voided_by }} &mdash; {{ transaction.void_reason }}</p>
+  <p>This transaction is excluded from all reports and balances.</p>
+{% endif %}
+
+<h1>{{ transaction.get_transaction_type_display }} &mdash; {{ transaction.amount|floatformat:2 }} {{ transaction.currency }}</h1>
+
+<dl>
+  <dt>Date</dt><dd>{{ transaction.date }}</dd>
+  <dt>Payee</dt><dd>{{ transaction.payee|default:"-" }}</dd>
+  <dt>Category</dt><dd>{{ transaction.category|default:"-" }}</dd>
+  <dt>From account</dt><dd>{{ transaction.source_account|default:"-" }}</dd>
+  <dt>To account</dt><dd>{{ transaction.target_account|default:"-" }}</dd>
+  <dt>Description</dt><dd>{{ transaction.description|default:"-" }}</dd>
+  <dt>Entered by</dt><dd>{{ transaction.created_by }} on {{ transaction.created_at }}</dd>
+</dl>
+
+{% if not transaction.is_void %}
+  <p>
+    {% if perms.onikisepet.change_transaction %}
+      <a href="{% url 'transaction_edit' transaction.pk %}">Correct this transaction</a>
+    {% endif %}
+    {% if perms.onikisepet.void_transaction %}
+      <a href="{% url 'transaction_void' transaction.pk %}">Void this transaction</a>
+    {% endif %}
+  </p>
+{% endif %}
+
+<h2>Receipts</h2>
+{% if receipts %}
+  <ul>
+    {% for receipt in receipts %}
+      <li>
+        <a href="{{ receipt.file.url }}" target="_blank" rel="noopener">{{ receipt.original_filename }}</a>
+        &mdash; uploaded by {{ receipt.uploaded_by }} on {{ receipt.uploaded_at }}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No receipts attached.</p>
+{% endif %}
+
+<h2>Audit Trail</h2>
+{% if audit_logs %}
+  <ul>
+    {% for log in audit_logs %}
+      <li>
+        {{ log.created_at }} &mdash; {{ log.performed_by }}
+        {% if log.action == "changed" %}
+          changed <strong>{{ log.field_name }}</strong>
+          from {{ log.old_value|default:"(empty)" }}
+          to {{ log.new_value|default:"(empty)" }}
+        {% else %}
+          {{ log.get_action_display|lower }} this transaction
+        {% endif %}
+        {% if log.reason %}&mdash; {{ log.reason }}{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No recorded changes.</p>
+{% endif %}
+
+<p><a href="{% url 'transaction_list' %}">Back to transactions</a></p>
+{% endblock %}

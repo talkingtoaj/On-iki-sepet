@@ -7,6 +7,8 @@ from django.shortcuts import resolve_url
 from django.test import TestCase
 from django.urls import reverse
 
+from onikisepet.usecases.roles import seed_roles
+
 from .helpers import AccountTestMixin
 
 
@@ -41,6 +43,7 @@ class AccountViewTests(AccountTestMixin, TestCase):
             email=f"{username}@example.com",
             password=self.password,
         )
+        seed_roles()
         group, _ = Group.objects.get_or_create(name=group_name)
         user.groups.add(group)
         return user

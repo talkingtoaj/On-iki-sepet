@@ -10,27 +10,26 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+from datetime import timedelta
 from pathlib import Path
 
-import os
+from config import env
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+# Configuration is driven by the environment. Set DJANGO_ENV=production to
+# deploy; that switches debug off and requires a real secret key, host list and
+# PostgreSQL database. See config/env.py for the rules and README for the vars.
+ENVIRONMENT = env.get_environment(os.environ)
+IS_PRODUCTION = env.is_production(os.environ)
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "dev-only-secret-key-change-me",
-)
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+SECRET_KEY = env.get_secret_key(os.environ)
+DEBUG = env.get_debug(os.environ)
+ALLOWED_HOSTS = env.get_allowed_hosts(os.environ)
+CSRF_TRUSTED_ORIGINS = env.get_csrf_trusted_origins(os.environ)
 
 
 # Application definition
@@ -47,6 +46,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Whitenoise serves collected static files directly from the app, so no
+    # separate web server is needed on Cloud Run.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,16 +76,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Auth views are mounted under /auth/ rather than Django's default
+# /accounts/, because /accounts/ already lists bank accounts.
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'report_dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASES = env.get_database_config(os.environ, BASE_DIR)
 
 
 # Password validation
@@ -108,9 +111,15 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
+# Reporting base currency. Foreign-currency figures are converted to this
+# for the dashboard grand total, using the ExchangeRate table.
+BASE_CURRENCY = 'TRY'
+
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# Reporting dates follow this zone, not the server clock. A Turkish
+# deployment should set DJANGO_TIME_ZONE=Europe/Istanbul.
+TIME_ZONE = os.environ.get('DJANGO_TIME_ZONE', 'UTC')
 
 USE_I18N = True
 
@@ -121,8 +130,58 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# In development STATIC_ROOT has not been collected yet, so let Whitenoise
+# resolve files per request instead of scanning the directory at startup
+# and warning that it is missing.
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_USE_FINDERS = DEBUG
+
+# Uploaded receipts. Without these, FileField wrote into the project root.
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage'
+            if IS_PRODUCTION
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
+
+# Receipts live in Google Cloud Storage in production. They contain financial
+# information, so the bucket must not be public: URLs are signed and expire.
+GS_BUCKET_NAME = os.environ.get('GS_BUCKET_NAME')
+if GS_BUCKET_NAME:
+    STORAGES['default'] = {
+        'BACKEND': 'storages.backends.gcloud.GoogleCloudStorage',
+        'OPTIONS': {
+            'bucket_name': GS_BUCKET_NAME,
+            'location': os.environ.get('GS_LOCATION', 'receipts'),
+            'default_acl': None,
+            'querystring_auth': True,
+            'expiration': timedelta(minutes=15),
+            'file_overwrite': False,
+        },
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# HTTPS, HSTS and cookie hardening. Enabled together in production.
+globals().update(
+    {
+        name: value
+        for name, value in env.get_security_settings(os.environ).items()
+        if value is not None
+    }
+)

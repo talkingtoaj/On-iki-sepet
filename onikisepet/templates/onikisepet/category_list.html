@@ -1,3 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block content %}
 <h1>Categories</h1>
 
 {% if categories %}
@@ -9,3 +12,4 @@
 {% else %}
   <p>No categories found.</p>
 {% endif %}
+{% endblock %}

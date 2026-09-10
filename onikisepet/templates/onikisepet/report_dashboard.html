@@ -1,25 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Financial Summary</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Financial Summary{% endblock %}
+{% block content %}
     <h1>Financial Summary</h1>
+    <p>As at {{ as_of }}. Base currency: {{ base_currency }}.</p>
+
+    {% for block in currency_blocks %}
+        <section>
+            <h2>{{ block.currency }}</h2>
+            <p>Total Income: {{ block.income|floatformat:2 }} {{ block.currency }}</p>
+            <p>Total Expenses: {{ block.expenses|floatformat:2 }} {{ block.currency }}</p>
+            <p>Net Financial Status: {{ block.net|floatformat:2 }} {{ block.currency }}</p>
+        </section>
+    {% endfor %}
 
     <section>
-        <h2>Total Income</h2>
-        <p>{{ total_income|floatformat:2 }}</p>
-    </section>
-
-    <section>
-        <h2>Total Expenses</h2>
-        <p>{{ total_expenses|floatformat:2 }}</p>
-    </section>
-
-    <section>
-        <h2>Net Financial Status</h2>
-        <p>{{ net_financial_status|floatformat:2 }}</p>
+        <h2>Net Financial Status &mdash; Grand Total</h2>
+        <p>
+            {% if not net_grand_total.is_complete %}&asymp;{% endif %}
+            {{ net_grand_total.total|floatformat:2 }} {{ net_grand_total.base_currency }}
+            {% if not net_grand_total.is_complete %}(incomplete){% endif %}
+        </p>
+        {% include "onikisepet/_conversion_notes.html" with grand_total=net_grand_total %}
     </section>
 
     <section>
@@ -27,12 +28,19 @@
         {% if account_balances %}
             <ul>
                 {% for item in account_balances %}
-                    <li>{{ item.account.name }}: {{ item.balance|floatformat:2 }}</li>
+                    <li>{{ item.account.name }}: {{ item.balance|floatformat:2 }} {{ item.account.currency }}</li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p>0.00</p>
+            <p>0.00 {{ base_currency }}</p>
         {% endif %}
+
+        <h3>Total Holdings &mdash; Grand Total</h3>
+        <p>
+            {% if not balance_grand_total.is_complete %}&asymp;{% endif %}
+            {{ balance_grand_total.total|floatformat:2 }} {{ balance_grand_total.base_currency }}
+            {% if not balance_grand_total.is_complete %}(incomplete){% endif %}
+        </p>
+        {% include "onikisepet/_conversion_notes.html" with grand_total=balance_grand_total %}
     </section>
-</body>
-</html>
+{% endblock %}
