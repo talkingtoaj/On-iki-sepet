@@ -140,6 +140,76 @@ steps:
       - migrate
       - --noinput
 
+  # Seeding runs after migrate and before deploy, so the service only ever
+  # goes live against a database that already has its roles and chart of
+  # accounts. Both commands are idempotent: seed_roles reconciles the three
+  # groups and their permissions, and seed_kut_data will not overwrite a
+  # balance or a rename a treasurer has made. That is what makes them safe
+  # to run on every deploy rather than once by hand.
+  - id: seed-roles
+    name: gcr.io/google-appengine/exec-wrapper
+    secretEnv: ['DJANGO_SECRET_KEY', 'POSTGRES_PASSWORD']
+    args:
+      - -i
+      - us.gcr.io/$PROJECT_ID/kut-finans:$COMMIT_SHA
+      - -s
+      - $PROJECT_ID:${_REGION}:${_INSTANCE}
+      - -e
+      - DJANGO_ENV=production
+      - -e
+      - DJANGO_SECRET_KEY
+      - -e
+      - POSTGRES_PASSWORD
+      - -e
+      - POSTGRES_DB=${_DB_NAME}
+      - -e
+      - POSTGRES_USER=${_DB_USER}
+      - -e
+      - POSTGRES_HOST=/cloudsql/$PROJECT_ID:${_REGION}:${_INSTANCE}
+      - -e
+      - DJANGO_ALLOWED_HOSTS=.run.app
+      # These steps do not send mail, and production refuses to start with the
+      # SMTP backend and no host. Declaring the dummy backend is exactly what
+      # config/env.py suggests, and beats inventing a mail host here.
+      - -e
+      - DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend
+      - --
+      - python
+      - manage.py
+      - seed_roles
+
+  - id: seed-kut-data
+    name: gcr.io/google-appengine/exec-wrapper
+    secretEnv: ['DJANGO_SECRET_KEY', 'POSTGRES_PASSWORD']
+    args:
+      - -i
+      - us.gcr.io/$PROJECT_ID/kut-finans:$COMMIT_SHA
+      - -s
+      - $PROJECT_ID:${_REGION}:${_INSTANCE}
+      - -e
+      - DJANGO_ENV=production
+      - -e
+      - DJANGO_SECRET_KEY
+      - -e
+      - POSTGRES_PASSWORD
+      - -e
+      - POSTGRES_DB=${_DB_NAME}
+      - -e
+      - POSTGRES_USER=${_DB_USER}
+      - -e
+      - POSTGRES_HOST=/cloudsql/$PROJECT_ID:${_REGION}:${_INSTANCE}
+      - -e
+      - DJANGO_ALLOWED_HOSTS=.run.app
+      # These steps do not send mail, and production refuses to start with the
+      # SMTP backend and no host. Declaring the dummy backend is exactly what
+      # config/env.py suggests, and beats inventing a mail host here.
+      - -e
+      - DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend
+      - --
+      - python
+      - manage.py
+      - seed_kut_data
+
   - id: deploy
     name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud

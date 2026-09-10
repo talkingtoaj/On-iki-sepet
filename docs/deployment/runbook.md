@@ -176,34 +176,39 @@ gcloud builds triggers update github on-iki-sepet \
 
 ### Cutover, in order
 
-Do not reorder these. Steps 1 and 2 are the ones that cannot be undone.
+Step 1 is the irreversible one, and it was taken **without a backup**, by
+decision. There is no dump of the deployed database. If a past figure from the
+old ledger is ever needed, it is gone.
 
 ```bash
-# 1. Back up what is about to be destroyed. Verify the file before continuing.
-gcloud sql export sql lb-db2 gs://YOUR_BACKUP_BUCKET/oniki_sepet-precutover.sql.gz \
-  --database=oniki_sepet --project=lifebalance-nuxt
-
-# 2. Drop and recreate the database. This destroys the deployed data.
+# 1. Drop and recreate the database. This destroys the deployed data and there
+#    is no backup to fall back on.
 gcloud sql databases delete oniki_sepet --instance=lb-db2 --project=lifebalance-nuxt
 gcloud sql databases create oniki_sepet --instance=lb-db2 --project=lifebalance-nuxt
 
-# 3. Confirm the database is now on no lineage at all. Expect a clean pass.
-#    Run from a machine with the Cloud SQL proxy up.
-uv run python manage.py check_database_lineage
+# 2. Push to main. The trigger does the rest: build, check the lineage, migrate
+#    the empty database, seed roles and the chart of accounts, then deploy over
+#    kut-finans.
 
-# 4. Merge the PR. The trigger builds, re-checks the lineage, migrates the
-#    empty database and deploys over kut-finans.
-
-# 5. Seed the empty database and create the first account.
-uv run python manage.py seed_roles
-uv run python manage.py seed_kut_data
+# 3. Create the first login. The only manual step left, because
+#    createsuperuser needs a password and is not idempotent, so it has no place
+#    in a pipeline that runs on every push.
 uv run python manage.py createsuperuser
 ```
 
-Then assign roles in the Django admin, as under **First-time setup** below.
+Then assign each person a role in the Django admin, as under **First-time
+setup** below. A signed-in account with no role sees a "waiting for access"
+page rather than the books.
 
-If step 4 fails on `check-lineage`, the wipe in step 2 did not happen or did not
-take. Nothing has been written; fix the database and re-run the build.
+Seeding is **not** a manual step any more: `seed_roles` and `seed_kut_data` run
+in the pipeline between `migrate` and `deploy`, so the service never goes live
+in front of a database with no roles and no chart of accounts. Both are
+idempotent — `seed_kut_data` will not overwrite a balance or a rename a
+treasurer has made — which is what makes them safe on every push rather than
+once by hand.
+
+If the build fails at `check-lineage`, step 1 did not happen or did not take.
+Nothing has been written; fix the database and re-run the build.
 
 ## Migrations
 

@@ -147,18 +147,57 @@ class CloudBuildPipelineTests(TestCase):
         self.assertIn("_EMAIL_BACKEND:", declared)
         self.assertNotIn("_EMAIL_BACKEND: django.core.mail.backends.smtp", declared)
 
-    def test_the_build_steps_never_send_mail(self):
-        """check-lineage and migrate run with DJANGO_ENV=production. They have
-        no reason to send mail and must not be blocked by its absence.
-        """
+    def _steps_before_deploy(self):
+        """Each `- id:` block ahead of the deploy step, as (id, body) pairs."""
         before_deploy = self.text.split("- id: deploy")[0]
+        blocks = before_deploy.split("- id: ")[1:]
 
-        self.assertEqual(
-            before_deploy.count(
-                "DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend"
-            ),
-            2,
+        return [(block.split("\n", 1)[0].strip(), block) for block in blocks]
+
+    def test_every_build_step_that_runs_django_declares_a_mail_backend(self):
+        """These steps run with DJANGO_ENV=production, where config/env.py
+        refuses to import settings under the SMTP backend with no host. Counting
+        occurrences would rot as steps are added, so check each step instead.
+        """
+        checked = []
+
+        for step_id, body in self._steps_before_deploy():
+            if "manage.py" not in body:
+                continue
+            checked.append(step_id)
+            self.assertIn(
+                "DJANGO_EMAIL_BACKEND=django.core.mail.backends.dummy.EmailBackend",
+                body,
+                f"step {step_id} runs Django without declaring a mail backend",
+            )
+
+        # Guard the guard: if the parsing above ever matches nothing, the loop
+        # would pass while asserting nothing at all.
+        self.assertGreaterEqual(len(checked), 2)
+
+    def test_seeding_runs_after_the_migration(self):
+        """Seeding writes rows, so it needs the schema to exist first."""
+        self.assertLess(self.text.index("- id: migrate"), self.text.index("- id: seed-roles"))
+        self.assertLess(
+            self.text.index("- id: seed-roles"), self.text.index("- id: seed-kut-data")
         )
+
+    def test_seeding_runs_before_the_service_goes_live(self):
+        """Deploying first would put a service in front of a database with no
+        roles and no chart of accounts.
+        """
+        self.assertLess(
+            self.text.index("- id: seed-kut-data"), self.text.index("- id: deploy")
+        )
+
+    def test_only_idempotent_commands_run_on_every_deploy(self):
+        """This pipeline runs on every push to main. seed_roles and
+        seed_kut_data are written to be repeatable; createsuperuser is not, and
+        loaddata would trample edited rows.
+        """
+        for step_id, body in self._steps_before_deploy():
+            for unsafe in ["createsuperuser", "loaddata", "flush"]:
+                self.assertNotIn(unsafe, body, f"{unsafe} must not run in {step_id}")
 
     def test_migrations_do_not_run_in_the_deploy_step(self):
         """Migrations belong in their own pre-deploy step, not bundled into the
